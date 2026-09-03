@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Client data must never enter this repo. Same rule as the four consumers.
+# Nothing here should ever produce these, which is why they are blocked
+# rather than trusted not to appear.
+*.pdf
+*.jsonl
+*.xlsx
+*.xlsm

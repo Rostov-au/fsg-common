@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fsg-common"
+version = "0.1.0"
+description = "Code shared by the four FSG estimating repos: the section resolver and library."
+requires-python = ">=3.10"
+dependencies = []
+
+# openpyxl is needed only by the two paths that open an Excel workbook
+# (`sections.load_section_library` and `scripts/refresh_from_workbook.py`),
+# and both import it inside the function. Installing the package does not
+# require it; a consumer that reads the live workbook asks for this extra.
+[project.optional-dependencies]
+workbook = ["openpyxl>=3.1"]
+dev = ["pytest>=7", "ruff>=0.5", "openpyxl>=3.1"]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# The section snapshot ships INSIDE the package. That is the point: the
+# Bluebeam toolkit used to read it out of a sibling checkout, so its answers
+# depended on a working tree it did not control.
+[tool.setuptools.package-data]
+"fsg_common.sections" = ["data/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+# `_resolver.py` is a near-verbatim port. Reformatting it would destroy the
+# property that makes the port checkable: that `diff` against the source
+# shows the twelve intended edits and nothing else.
+"src/fsg_common/sections/_resolver.py" = ["E501"]
