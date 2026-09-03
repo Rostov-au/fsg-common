@@ -1,0 +1,12 @@
+{
+  "substitutions": [
+    {
+      "from": "114.3CHS4.8",
+      "to": "114.3CHS4.5",
+      "reason": "114.3 CHS x 4.8mm does not exist as a standard size",
+      "decided_by": "estimating team",
+      "date": "2026-08-28",
+      "source": "fsg-estimating-tools/docs/questions-for-estimators.md Q4, d37ac80"
+    }
+  ]
+}
