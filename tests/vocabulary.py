@@ -102,6 +102,9 @@ ANCHORS = [
     ("250UB25.7", "FSG rounds the mass, so this is the stored 250UB26"),
     ("250UB26", "the stored id resolves exactly"),
     ("6 mm FLOOR PLATE", "6FP, priced by area"),
+    ("UB610101", "detailer's glued designation order -> 610UB101, added 5 Sep 2026"),
+    ("UB20018", "same dialect, a smaller depth -> 200UB18"),
+    ("L75*6", "glued leading L, equal angle implied -> 75EA6"),
 ]
 
 #: Behaviour both source resolvers share that MAY be wrong. Carried in the
