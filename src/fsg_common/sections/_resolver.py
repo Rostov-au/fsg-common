@@ -203,8 +203,20 @@ def cold_formed(raw: str) -> tuple[str, int, float] | None:
 # refused, on a number that meant 6061 mm long. An alloy number now has to
 # sit next to an alloy word or carry a temper suffix, which is how a
 # drawing writes one.
+#
+# `SS` and `S/S` added 5 Sep 2026 (this package's own known_issues.py issue
+# 3): both source resolvers added them 3 Sep 2026 in step with each other
+# (fsg-tender-review's own comment cites its twin, #203) -- a decision
+# already made and already implemented identically in both repos this
+# package consolidates, not a fresh one for this package to make on its
+# own. `STAINLESS` was carried and the abbreviation every detailer actually
+# types was not, so `SS 10 ROD` returned a CARBON `10ROD` labelled
+# `canonical` -- asserted rather than flagged. The `\b` on both sides was
+# MEASURED, not assumed, in fsg-tender-review: of 3,841 distinct archive
+# profiles exactly ONE matches (`M16 SS BOLT`, which is stainless) and ZERO
+# of the library's section ids do.
 _NON_STEEL = re.compile(
-    r"\b(?:ALUMINI?UM|ALUM|ALLOY|STAINLESS|TIMBER|GRP|FRP)\b"
+    r"\b(?:ALUMINI?UM|ALUM|ALLOY|STAINLESS|SS|S/S|TIMBER|GRP|FRP)\b"
     r"|\b(?:6061|6063|5083|5005)[\s-]*T\d+\b"
     r"|\b(?:ALUMINI?UM|ALUM|ALLOY)[\s-]*(?:6061|6063|5083|5005)\b"
     r"|\b(?:6061|6063|5083|5005)[\s-]*(?:ALUMINI?UM|ALUM|ALLOY)\b"

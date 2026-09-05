@@ -188,14 +188,17 @@ def test_observed_gaps_are_recorded_not_asserted(raw, note):
                    "material-mismatch", "shape-modifier"), f"{raw}: {note}"
 
 
-def test_ss_still_reads_as_carbon_steel():
-    """The gap, stated as a fact rather than an aspiration.
-
-    If someone adds SS to `_NON_STEEL`, this test goes red and the diff says
-    what changed and why -- which is the point. Change the assertion then,
-    deliberately, with the estimator's answer in hand.
+def test_ss_is_recognised_as_stainless():
+    """5 Sep 2026: the gap this test used to pin is closed, with the
+    estimator's answer already in hand -- both source resolvers added `SS`/
+    `S/S` to `_NON_STEEL` on 3 Sep 2026 in step with each other (a decision
+    already made, not a fresh one for this package), and fsg-common's own
+    port had simply been taken before that same-day change landed.
     """
-    section, how = sections.resolve("SS 10 ROD")
-    assert section is not None and section.section_id == "10ROD"
-    assert how == "canonical"
+    assert sections.resolve("SS 10 ROD") == (None, "material-mismatch")
+    assert sections.resolve("S/S 10 ROD") == (None, "material-mismatch")
     assert sections.resolve("STAINLESS 10 ROD") == (None, "material-mismatch")
+    # The `\b` boundary stays exact: `SHS`/`RHS` are untouched, `SS` inside a
+    # longer word is a substring and not a word.
+    section, how = sections.resolve("100SHS4")
+    assert section is not None and how == "exact"
