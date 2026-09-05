@@ -48,36 +48,26 @@ jobs:
         run: ruff check .
 
   tests:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - label: linux
-            runner: [self-hosted, fsg-linux]
-          - label: windows
-            runner: [self-hosted, fsg-windows]
-    runs-on: ${{ matrix.runner }}
-    # Bash on both legs -- see fsg-tender-review/ci.yml's own comment on why
-    # this has to be set at the job level and why the Windows preflight below
-    # exists: a self-hosted Windows runner does not ship bash the way
-    # `windows-latest` did, and a missing-bash failure otherwise reads as five
-    # confusing red test steps rather than one named machine problem.
-    defaults:
-      run:
-        shell: bash
+    # Linux only, deliberately -- dropped the Windows leg 5 Sep 2026 rather
+    # than leave it declared and permanently unpickupable. `truenas-win10-vm`
+    # (the `fsg-windows` label) is a separate machine neither this session
+    # nor its coordinator has access to register a runner on, so a declared
+    # Windows leg here would sit `pending` forever, which is a worse failure
+    # mode than not having it: an absent check that reads as a stalled one
+    # rather than a missing one.
+    #
+    # RESTORE CONDITION, so this is a decision with a trigger and not a gate
+    # that quietly stopped existing: this package's only path handling today
+    # is `__file__`-derived (`substitutions.py`, `_snapshot.py`), which ADR 14
+    # (fsg-tender-review/CLAUDE.md) says keeps host semantics and must not be
+    # "fixed" -- there is nothing here a Windows-vs-Linux path difference
+    # could currently expose. The moment this package absorbs anything that
+    # parses a path or an identifier OUT OF DATA rather than deriving one from
+    # `__file__` -- quote identity / `canon_quote` is the named Phase 2
+    # candidate -- add the Windows leg back before merging that change, not
+    # after.
+    runs-on: [self-hosted, fsg-linux]
     steps:
-      - name: Preflight -- bash must be on the runner service's PATH
-        if: matrix.label == 'windows'
-        shell: powershell
-        run: |
-          $bash = Get-Command bash -ErrorAction SilentlyContinue
-          if (-not $bash) {
-            Write-Host "::error::bash is not on this runner's PATH. Install Git for Windows and add its usr\bin to the machine PATH, then restart the runner service."
-            exit 1
-          }
-          Write-Host "bash: $($bash.Source)"
-          exit 0
-
       - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v7
