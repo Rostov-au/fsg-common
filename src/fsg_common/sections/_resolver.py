@@ -203,8 +203,20 @@ def cold_formed(raw: str) -> tuple[str, int, float] | None:
 # refused, on a number that meant 6061 mm long. An alloy number now has to
 # sit next to an alloy word or carry a temper suffix, which is how a
 # drawing writes one.
+#
+# `SS` and `S/S` added 5 Sep 2026 (this package's own known_issues.py issue
+# 3): both source resolvers added them 3 Sep 2026 in step with each other
+# (fsg-tender-review's own comment cites its twin, #203) -- a decision
+# already made and already implemented identically in both repos this
+# package consolidates, not a fresh one for this package to make on its
+# own. `STAINLESS` was carried and the abbreviation every detailer actually
+# types was not, so `SS 10 ROD` returned a CARBON `10ROD` labelled
+# `canonical` -- asserted rather than flagged. The `\b` on both sides was
+# MEASURED, not assumed, in fsg-tender-review: of 3,841 distinct archive
+# profiles exactly ONE matches (`M16 SS BOLT`, which is stainless) and ZERO
+# of the library's section ids do.
 _NON_STEEL = re.compile(
-    r"\b(?:ALUMINI?UM|ALUM|ALLOY|STAINLESS|TIMBER|GRP|FRP)\b"
+    r"\b(?:ALUMINI?UM|ALUM|ALLOY|STAINLESS|SS|S/S|TIMBER|GRP|FRP)\b"
     r"|\b(?:6061|6063|5083|5005)[\s-]*T\d+\b"
     r"|\b(?:ALUMINI?UM|ALUM|ALLOY)[\s-]*(?:6061|6063|5083|5005)\b"
     r"|\b(?:6061|6063|5083|5005)[\s-]*(?:ALUMINI?UM|ALUM|ALLOY)\b"
@@ -355,6 +367,27 @@ _DIALECT_VENDOR = re.compile(r"^(?:LYS|STR)\s*[-_ ]\s*")
 # the exact BPL/PL confusion CLAUDE.md rules out, only arrived at politely.
 # It stays unresolved, which is a finding, which is correct.
 
+# `UB610101`: a detailer's designation order, depth and mass glued with no
+# separator and UB written first -- the library files it the other way round,
+# `610UB101`. AS/NZS UB depths are three digits throughout the range this
+# library carries (150-1200), so the split is fixed rather than guessed per
+# notation: first three digits are the depth, the rest is the mass. Ported
+# 5 Sep 2026 from both source resolvers, which already agreed on this (added
+# the same day in step with each other, `fsg-tender-review`'s
+# `docs/library-gap-ranked.md` "Designation order and angle notation") --
+# this package's port of `_expand_detailing_dialect` predated that sync, the
+# same drift shape as the `SS`/`S/S` gap fixed earlier the same night. A
+# split that does not land on a real row simply does not resolve, same as
+# any other candidate: this generates a candidate, it does not assert one.
+_DIALECT_UB_GLUED = re.compile(r"^UB(\d{3})(\d{2,3})$")
+# `L75*6`: FSG's own convention writes a trailing, spaced 'L' for an angle;
+# the archive's detailer dialect glues a LEADING 'L' to the leg dimension
+# instead, with only two numbers given -- leg and thickness, an equal angle
+# implied by there being no second leg. Expanded to the spelled-out
+# three-number form ('75 X 75 X 6 ANGLE') so it goes through the same EA
+# branch every other equal-angle notation does.
+_DIALECT_ANGLE_GLUED = re.compile(r"^L\s*([\d.]+)\s*[*X]\s*([\d.]+)\s*$")
+
 
 def _expand_detailing_dialect(text: str) -> str:
     """Rewrite detailing-package notation into notation this module reads.
@@ -379,6 +412,14 @@ def _expand_detailing_dialect(text: str) -> str:
     if m:
         thickness, width = m.group(1), m.group(2)
         return f"{width} X {thickness} FLAT"
+    m = _DIALECT_UB_GLUED.match(stripped)
+    if m:
+        depth, mass = m.group(1), m.group(2)
+        return f"{depth} UB {mass}"
+    m = _DIALECT_ANGLE_GLUED.match(stripped)
+    if m:
+        leg, thickness = m.group(1), m.group(2)
+        return f"{leg} X {leg} X {thickness} ANGLE"
     return _DIALECT_VENDOR.sub("", stripped, count=1)
 
 

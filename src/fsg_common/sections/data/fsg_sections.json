@@ -8,11 +8,11 @@
    "rates_block": "90_Lists!AH14:AJ19",
    "steel_density_kg_m2_mm": "90_Lists!AJ25"
   },
-  "content_sha256": "1e25ddf5d03779e1",
-  "generated": "2026-09-02",
+  "content_sha256": "cd1e8d858c55214a",
+  "generated": "2026-09-04",
   "note": "Duplicated from the live estimating workbook, not read at run time. Re-run scripts/refresh_from_workbook.py when the workbook's section list or labour rates change.",
   "sheet": "90_Lists",
-  "source": "S:\\Estimating\\Reference\\FSG_Estimating_Template.xlsx"
+  "source": "../fsg-estimating-tools/templates/FSG_Estimating_Template.xlsx"
  },
  "config": {
   "el_max_kg_per_m": 15.0,
@@ -2534,7 +2534,7 @@
    "mass_kg_per_m": 3.38,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "42.2CHS4.05"
+   "section_id": "42.2CHS3.56"
   },
   {
    "build_default": "Stick",
@@ -2542,7 +2542,7 @@
    "mass_kg_per_m": 4.46,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "42.2CHS5.4"
+   "section_id": "42.2CHS4.85"
   },
   {
    "build_default": "Stick",
@@ -2550,7 +2550,7 @@
    "mass_kg_per_m": 4.05,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "48.3CHS4.05"
+   "section_id": "48.3CHS3.68"
   },
   {
    "build_default": "Stick",
@@ -2558,7 +2558,7 @@
    "mass_kg_per_m": 5.4,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "48.3CHS5.40"
+   "section_id": "48.3CHS5.08"
   },
   {
    "build_default": "Stick",
@@ -2678,7 +2678,7 @@
    "mass_kg_per_m": 19.24,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "168.3CHS4.80"
+   "section_id": "168.3CHS4.8"
   },
   {
    "build_default": "Stick",
@@ -2710,7 +2710,7 @@
    "mass_kg_per_m": 25.23,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "219.1CHS4.80"
+   "section_id": "219.1CHS4.8"
   },
   {
    "build_default": "Stick",
@@ -2734,7 +2734,7 @@
    "mass_kg_per_m": 64.57,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "219.1CHS12.70"
+   "section_id": "219.1CHS12.7"
   },
   {
    "build_default": "Stick",
@@ -2742,7 +2742,7 @@
    "mass_kg_per_m": 31.76,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "273CHS4.80"
+   "section_id": "273CHS4.8"
   },
   {
    "build_default": "Stick",
@@ -2766,7 +2766,7 @@
    "mass_kg_per_m": 81.54,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "273CHS12.70"
+   "section_id": "273CHS12.7"
   },
   {
    "build_default": "Stick",
@@ -2798,7 +2798,7 @@
    "mass_kg_per_m": 97.44,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "323.9CHS12.70"
+   "section_id": "323.9CHS12.7"
   },
   {
    "build_default": "Stick",
@@ -2830,7 +2830,7 @@
    "mass_kg_per_m": 107.28,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "355.6CHS12.70"
+   "section_id": "355.6CHS12.7"
   },
   {
    "build_default": "Stick",
@@ -2862,7 +2862,7 @@
    "mass_kg_per_m": 123.29,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "406.4CHS12.70"
+   "section_id": "406.4CHS12.7"
   },
   {
    "build_default": "Stick",
@@ -2894,7 +2894,7 @@
    "mass_kg_per_m": 139.19,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "457.2CHS12.70"
+   "section_id": "457.2CHS12.7"
   },
   {
    "build_default": "Stick",
@@ -2958,7 +2958,7 @@
    "mass_kg_per_m": 186.75,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "609.6CHS12.70"
+   "section_id": "609.6CHS12.7"
   },
   {
    "build_default": "Stick",
@@ -4390,7 +4390,7 @@
    "mass_kg_per_m": 1.36,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "25SHS2.0"
+   "section_id": "25SHS2"
   },
   {
    "build_default": "Stick",
@@ -4406,7 +4406,7 @@
    "mass_kg_per_m": 1.89,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "25SHS3.0"
+   "section_id": "25SHS3"
   },
   {
    "build_default": "Stick",
@@ -4422,7 +4422,7 @@
    "mass_kg_per_m": 1.68,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "30SHS2.0"
+   "section_id": "30SHS2"
   },
   {
    "build_default": "Stick",
@@ -4438,7 +4438,7 @@
    "mass_kg_per_m": 1.99,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "35SHS2.0"
+   "section_id": "35SHS2"
   },
   {
    "build_default": "Stick",
@@ -4454,7 +4454,7 @@
    "mass_kg_per_m": 2.83,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "35SHS3.0"
+   "section_id": "35SHS3"
   },
   {
    "build_default": "Stick",
@@ -4470,7 +4470,7 @@
    "mass_kg_per_m": 2.31,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "40SHS2.0"
+   "section_id": "40SHS2"
   },
   {
    "build_default": "Stick",
@@ -4486,7 +4486,7 @@
    "mass_kg_per_m": 4.09,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "40SHS4.0"
+   "section_id": "40SHS4"
   },
   {
    "build_default": "Stick",
@@ -4502,7 +4502,7 @@
    "mass_kg_per_m": 2.93,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "50SHS2.0"
+   "section_id": "50SHS2"
   },
   {
    "build_default": "Stick",
@@ -4518,7 +4518,7 @@
    "mass_kg_per_m": 4.25,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "50SHS3.0"
+   "section_id": "50SHS3"
   },
   {
    "build_default": "Stick",
@@ -4526,7 +4526,7 @@
    "mass_kg_per_m": 5.35,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "50SHS4.0"
+   "section_id": "50SHS4"
   },
   {
    "build_default": "Stick",
@@ -4534,7 +4534,7 @@
    "mass_kg_per_m": 6.24,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "50SHS5.0"
+   "section_id": "50SHS5"
   },
   {
    "build_default": "Stick",
@@ -4542,7 +4542,7 @@
    "mass_kg_per_m": 3.88,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "65SHS2.0"
+   "section_id": "65SHS2"
   },
   {
    "build_default": "Stick",
@@ -4558,7 +4558,7 @@
    "mass_kg_per_m": 5.66,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "65SHS3.0"
+   "section_id": "65SHS3"
   },
   {
    "build_default": "Stick",
@@ -4566,7 +4566,7 @@
    "mass_kg_per_m": 7.23,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "65SHS4.0"
+   "section_id": "65SHS4"
   },
   {
    "build_default": "Stick",
@@ -4574,7 +4574,7 @@
    "mass_kg_per_m": 8.75,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "65SHS5.0"
+   "section_id": "65SHS5"
   },
   {
    "build_default": "Stick",
@@ -4582,7 +4582,7 @@
    "mass_kg_per_m": 10.1,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "65SHS6.0"
+   "section_id": "65SHS6"
   },
   {
    "build_default": "Stick",
@@ -4590,7 +4590,7 @@
    "mass_kg_per_m": 5.56,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "75SHS2.0"
+   "section_id": "75SHS2"
   },
   {
    "build_default": "Stick",
@@ -4606,7 +4606,7 @@
    "mass_kg_per_m": 6.6,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "75SHS3.0"
+   "section_id": "75SHS3"
   },
   {
    "build_default": "Stick",
@@ -4622,7 +4622,7 @@
    "mass_kg_per_m": 8.49,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "75SHS4.0"
+   "section_id": "75SHS4"
   },
   {
    "build_default": "Stick",
@@ -4630,7 +4630,7 @@
    "mass_kg_per_m": 10.3,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "75SHS5.0"
+   "section_id": "75SHS5"
   },
   {
    "build_default": "Stick",
@@ -4638,7 +4638,7 @@
    "mass_kg_per_m": 12.0,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "75SHS6.0"
+   "section_id": "75SHS6"
   },
   {
    "build_default": "Stick",
@@ -4646,7 +4646,7 @@
    "mass_kg_per_m": 5.44,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "90SHS2.0"
+   "section_id": "90SHS2"
   },
   {
    "build_default": "Stick",
@@ -4662,7 +4662,7 @@
    "mass_kg_per_m": 12.5,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "89SHS5.0"
+   "section_id": "89SHS5"
   },
   {
    "build_default": "Stick",
@@ -4670,7 +4670,7 @@
    "mass_kg_per_m": 14.6,
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
-   "section_id": "89SHS6.0"
+   "section_id": "89SHS6"
   },
   {
    "build_default": "Stick",
@@ -6047,6 +6047,78 @@
    "plate_kg_per_m2": null,
    "plate_thickness_mm": null,
    "section_id": "LYS-Z20024"
+  },
+  {
+   "build_default": "Stick",
+   "category": "HS",
+   "mass_kg_per_m": 11.756,
+   "plate_kg_per_m2": null,
+   "plate_thickness_mm": null,
+   "section_id": "139.7CHS3.5"
+  },
+  {
+   "build_default": "Stick",
+   "category": "HS",
+   "mass_kg_per_m": 13.949,
+   "plate_kg_per_m2": null,
+   "plate_thickness_mm": null,
+   "section_id": "165.1CHS3.5"
+  },
+  {
+   "build_default": "Stick",
+   "category": "TYP",
+   "mass_kg_per_m": 5.593,
+   "plate_kg_per_m2": null,
+   "plate_thickness_mm": null,
+   "section_id": "LYS-Z20019"
+  },
+  {
+   "build_default": "Stick",
+   "category": "HS",
+   "mass_kg_per_m": 10.114,
+   "plate_kg_per_m2": null,
+   "plate_thickness_mm": null,
+   "section_id": "139.7CHS3.0"
+  },
+  {
+   "build_default": "Stick",
+   "category": "TYP",
+   "mass_kg_per_m": 2.025,
+   "plate_kg_per_m2": null,
+   "plate_thickness_mm": null,
+   "section_id": "LYS-C10012"
+  },
+  {
+   "build_default": "Stick",
+   "category": "TYP",
+   "mass_kg_per_m": 3.206,
+   "plate_kg_per_m2": null,
+   "plate_thickness_mm": null,
+   "section_id": "LYS-C10019"
+  },
+  {
+   "build_default": "Stick",
+   "category": "HS",
+   "mass_kg_per_m": 16.61,
+   "plate_kg_per_m2": null,
+   "plate_thickness_mm": null,
+   "section_id": "139.7CHS5.0"
+  },
+  {
+   "build_default": "Stick",
+   "category": "PL",
+   "mass_kg_per_m": null,
+   "plate_kg_per_m2": 274.75,
+   "plate_thickness_mm": 35.0,
+   "section_id": "35PL"
+  },
+  {
+   "build_default": "Stick",
+   "category": "PL",
+   "mass_kg_per_m": null,
+   "plate_kg_per_m2": 235.5,
+   "plate_thickness_mm": 30.0,
+   "section_id": "30PL"
   }
  ]
 }

@@ -86,6 +86,9 @@ ANCHORS = [
     ("12 BPL", "Bisalloy stays Bisalloy"),
     ("STAINLESS 10 ROD", "material modifier refuses as material-mismatch"),
     ("STAINLESS 12 PL", "material modifier refuses"),
+    ("SS 10 ROD", "the abbreviation refuses too, added 5 Sep 2026"),
+    ("SS 12 PL", "same shape"),
+    ("S/S 10 ROD", "the slashed spelling refuses the same way"),
     ("GALV 10 ROD", "finish modifier drops: same steel, same mass"),
     ("GALVANISED 10 ROD", "finish modifier drops"),
     ("HDG 200 PFC", "finish modifier drops"),
@@ -99,25 +102,23 @@ ANCHORS = [
     ("250UB25.7", "FSG rounds the mass, so this is the stored 250UB26"),
     ("250UB26", "the stored id resolves exactly"),
     ("6 mm FLOOR PLATE", "6FP, priced by area"),
+    ("UB610101", "detailer's glued designation order -> 610UB101, added 5 Sep 2026"),
+    ("UB20018", "same dialect, a smaller depth -> 200UB18"),
+    ("L75*6", "glued leading L, equal angle implied -> 75EA6"),
 ]
 
 #: Behaviour both source resolvers share that MAY be wrong. Carried in the
 #: corpus so parity covers it, and listed here so it is not mistaken for an
 #: endorsed answer.
 #:
-#: `_NON_STEEL` lists STAINLESS but not the abbreviation SS, so `SS 10 ROD`
-#: resolves to the carbon-steel `10ROD` and is labelled `canonical` -- an
-#: asserted match, with nothing for an estimator to look at. That is the same
-#: shape as the THREADED and HEX defect closed on 1 Sep 2026: a modifier
-#: dropped and the plain section returned as though the drawing had said it.
-#:
-#: It is NOT fixed here. Whether `SS` on an FSG drawing means stainless is a
-#: question about drawing practice, and this package exists to stop the two
-#: resolvers drifting, not to change what either answers. Raised for the
-#: resolver lane in `fsg-tender-review`; `tools/known_issues.py` reproduces it.
+#: The `SS`/`S/S` gap this list used to carry was closed 5 Sep 2026: both
+#: source resolvers already added them to `_NON_STEEL` on 3 Sep, in step with
+#: each other, and this package's port simply predated that same-day change.
+#: See `ANCHORS` above and `_resolver.py`'s own comment. Moved rather than
+#: deleted outright as a reminder of the shape: a gap this list carries is
+#: presumed live until a parity run against the current sources says
+#: otherwise, not until someone remembers to check.
 OBSERVED_GAPS = [
-    ("SS 10 ROD", "resolves to carbon 10ROD as `canonical`; STAINLESS refuses"),
-    ("SS 12 PL", "same shape"),
     ("BASEPLATE", "bare, no size: unresolved"),
 ]
 

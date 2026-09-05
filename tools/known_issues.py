@@ -4,9 +4,13 @@
     python tools/known_issues.py
 
 Three behaviours found while proving `fsg_common.sections` matches the two
-resolvers it replaces. None is fixed here: this package consolidates the two
-copies without moving any answer, and each of these changes an answer. They
-belong to the lane that owns `fsg-tender-review`.
+resolvers it replaces. Issues 1 and 2 are not fixed here: this package
+consolidates the two copies without moving an answer neither source has
+already agreed on, and each of those changes an answer that is still an
+open estimator question. Issue 3 is the exception, fixed 5 Sep 2026 --
+both sources had already agreed on the same answer three days before this
+package caught up, so applying it here was catching up to a decision
+already made, not making a new one.
 
 This is a script rather than a prose list on purpose. A reproducing command
 in a document goes stale silently the day someone fixes the thing it
@@ -104,7 +108,13 @@ def issue_2_mass_of_floor_plate() -> bool:
 
 
 def issue_3_ss_is_not_stainless() -> bool:
-    """`_NON_STEEL` lists STAINLESS but not the abbreviation SS."""
+    """RESOLVED 5 Sep 2026. `_NON_STEEL` now lists `SS`/`S/S` alongside
+    `STAINLESS`, matching both source resolvers -- see `_resolver.py`'s own
+    comment. Kept as a reproducer rather than deleted: this is exactly the
+    "a RESOLVED line means the behaviour changed since 3 Sep 2026, check it
+    changed deliberately, then delete that reproducer" case this file's own
+    docstring names, and it changed deliberately (both sources already
+    agreed on the same answer three days before this package caught up)."""
     rule("3. `SS` is not recognised as stainless")
     rows = ["STAINLESS 10 ROD", "SS 10 ROD", "S/S 10 ROD", "STAINLESS STEEL 10 ROD"]
     live = False
@@ -115,15 +125,12 @@ def issue_3_ss_is_not_stainless() -> bool:
         if raw.upper().startswith("S") and "STAINLESS" not in raw.upper() and sec:
             live = True
     print()
-    print("  Both source resolvers behave identically, so this is a shared gap and")
-    print("  not drift. It is the same shape as the THREADED/HEX defect closed on")
-    print("  1 Sep 2026: a modifier dropped, and the plain section returned as though")
-    print("  the drawing had said it. Stainless is close to carbon steel in density,")
-    print("  so the mass is not badly wrong -- the cost is.")
-    print()
-    print("  NOT ESTABLISHED: how often `SS` appears on FSG drawings, or whether it")
-    print("  ever means anything else. That frequency decides whether this is worth")
-    print("  acting on, and the archive can answer it. No drawing corpus was read.")
+    print("  Both source resolvers added `SS`/`S/S` to their own `_NON_STEEL` on")
+    print("  3 Sep 2026, in step with each other. This package's port was taken")
+    print("  before that same-day change landed, so it was a real (if brief) THIRD")
+    print("  copy drifting behind the two it consolidates -- caught by this file's")
+    print("  own reproducer and by tools/parity_report.py's live comparison,")
+    print("  fixed 5 Sep 2026 by porting the same change.")
     print(f"\n  STILL LIVE: {live}")
     return live
 
@@ -134,7 +141,8 @@ def main() -> int:
     results = [
         ("1  273 CHS 6.4, the open estimator question", issue_1_chs_wall()),
         ("2  mass_of() returns kg/m2 for floor plate", issue_2_mass_of_floor_plate()),
-        ("3  SS is not recognised as stainless", issue_3_ss_is_not_stainless()),
+        ("3  SS is not recognised as stainless (fixed 5 Sep 2026)",
+         issue_3_ss_is_not_stainless()),
     ]
     rule("Summary")
     for name, live in results:
