@@ -1,0 +1,92 @@
+name: CI
+
+# tr#(fsg-common adoption, 5 Sep 2026): the package had no CI at all --
+# `git log --oneline` shows three commits and zero workflow runs. A shared
+# package with no CI, that two repos are about to depend on and delete their
+# own copies in favour of, is a single point of failure for both. This is the
+# prerequisite the adoption work names as Phase 0, added before anything
+# imports the package.
+#
+# Two jobs: `checks` (ruff) and `tests` (pytest, on both OSes this package's
+# eventual consumers run on). Self-hosted, matching every other repo in this
+# estate -- `fsg-tender-review/.github/workflows/ci.yml`'s own history notes
+# the Windows leg moved off `windows-latest` specifically to stop billing
+# GitHub minutes; a brand-new repo should not reintroduce that.
+#
+# `tools/parity_report.py` deliberately does NOT run here. It needs both
+# sibling repos checked out at a pinned ref, which a private-repo checkout
+# from this workflow cannot do without a cross-repo credential this repo does
+# not have -- the same gap `fsg-tender-review`'s own `check_twin_parity.py`
+# has in its CI (`tr#281`). It runs locally, where every dev machine for this
+# project has the siblings checked out, per its own docstring.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Checks (ruff)
+    runs-on: [self-hosted, fsg-linux]
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install ".[dev]"
+
+      - name: ruff check
+        run: ruff check .
+
+  tests:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux
+            runner: [self-hosted, fsg-linux]
+          - label: windows
+            runner: [self-hosted, fsg-windows]
+    runs-on: ${{ matrix.runner }}
+    # Bash on both legs -- see fsg-tender-review/ci.yml's own comment on why
+    # this has to be set at the job level and why the Windows preflight below
+    # exists: a self-hosted Windows runner does not ship bash the way
+    # `windows-latest` did, and a missing-bash failure otherwise reads as five
+    # confusing red test steps rather than one named machine problem.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Preflight -- bash must be on the runner service's PATH
+        if: matrix.label == 'windows'
+        shell: powershell
+        run: |
+          $bash = Get-Command bash -ErrorAction SilentlyContinue
+          if (-not $bash) {
+            Write-Host "::error::bash is not on this runner's PATH. Install Git for Windows and add its usr\bin to the machine PATH, then restart the runner service."
+            exit 1
+          }
+          Write-Host "bash: $($bash.Source)"
+          exit 0
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install ".[dev]"
+
+      - name: Tests
+        run: PYTHONPATH=src pytest -q
