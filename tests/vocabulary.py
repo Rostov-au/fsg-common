@@ -105,6 +105,9 @@ ANCHORS = [
     ("UB610101", "detailer's glued designation order -> 610UB101, added 5 Sep 2026"),
     ("UB20018", "same dialect, a smaller depth -> 200UB18"),
     ("L75*6", "glued leading L, equal angle implied -> 75EA6"),
+    ("L90x6H", "tr#359, 6 Sep 2026: trailing H orientation suffix "
+              "(Horizontal, a transmission-tower convention) -> 90EA6, "
+              "same as L90x6"),
     # tr#280, David's decision 5 Sep 2026: a bare cold-formed code aliases to
     # its Lysaght row, labelled as an assumed manufacturer. All 9 of the
     # archive's most common bare-vs-prefixed pairs (library-gap-ranked.md,

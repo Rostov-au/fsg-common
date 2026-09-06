@@ -388,7 +388,27 @@ _DIALECT_UB_GLUED = re.compile(r"^UB(\d{3})(\d{2,3})$")
 # implied by there being no second leg. Expanded to the spelled-out
 # three-number form ('75 X 75 X 6 ANGLE') so it goes through the same EA
 # branch every other equal-angle notation does.
-_DIALECT_ANGLE_GLUED = re.compile(r"^L\s*([\d.]+)\s*[*X]\s*([\d.]+)\s*$")
+#
+# The trailing `H?` (tr#359, fsg-tender-review, 6 Sep 2026): a transmission-
+# tower drawing's own convention appends a bare `H` to mark a Horizontal
+# member on the same section a diagonal would carry unmarked -- `L90x6H`,
+# 10 occurrences in FSG-25Q-319's own `dimensions` field, none of them a
+# different section from `L90x6`. NOT `callouts` -- that job's
+# `section_recall` reads `callouts` only, so this population and that
+# metric never meet regardless of this fix (a peer re-derived the full
+# `dimensions` census independently: 890 H-suffix occurrences, 22 distinct
+# leg/thickness pairs job-wide, of which 4 name one of the job's 15 priced
+# sections; most of those, like the glued/bare-triple population in the
+# companion fix, arrive embedded in a longer legend or schedule string that
+# `resolve()`'s anchored matching still refuses -- a parsing gap, not
+# something this change touches). Measured before widening: `H` never
+# appears after a digit anywhere in Tier A's 14,556 archive lines (the
+# detailer's own dialect), so this is a drawing-side convention this change
+# cannot regress there. Deliberately scoped to `H` alone, not "any trailing
+# letter" -- that is every distinct suffix this corpus was measured to
+# carry; a different letter is a new finding, not an assumed member of the
+# same family.
+_DIALECT_ANGLE_GLUED = re.compile(r"^L\s*([\d.]+)\s*[*X]\s*([\d.]+)\s*H?\s*$")
 
 
 def _expand_detailing_dialect(text: str) -> str:
