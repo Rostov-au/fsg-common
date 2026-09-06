@@ -739,33 +739,50 @@ class SectionLibrary:
                 return hit, ("canonical"
                              if _is_rounding(candidate, hit, self.rounding)
                              else "nearest")
-        # Check the candidates too, not just the raw text: a schedule line
-        # reads 'P7 Z20015', and only the demarked form is recognisable as a
-        # purlin.
+        # tr#280, David's decision 5 Sep 2026: alias a BARE cold-formed code
+        # (no vendor prefix AT ALL, not even one that candidate-generation
+        # would strip) to its Lysaght row, labelled as an assumed
+        # manufacturer, refusing on a miss.
+        #
+        # Deliberately `cold_formed(raw)` ONLY, not the broader
+        # `any(cold_formed(candidate) for candidate in candidates)` the
+        # classification check below still uses. Found by hand, from the
+        # EXISTING regression suite, not by reasoning about it:
+        # `canonical_candidates("STR-C20024")` returns `["C20024"]` --
+        # stripping the STR- prefix as candidate-generation noise, the same
+        # mechanism that recovers 'Z20015' from the schedule mark in
+        # 'P7 Z20015'. Checking candidates for the ALIAS (not just the
+        # generic cold-formed classification) would have aliased a genuinely
+        # Stramit-branded code to Lysaght's mass -- a real, different
+        # manufacturer's own prefix, mistaken for the absence of one. Raw
+        # text only draws the line correctly: a schedule mark is noise
+        # around a bare code; a competing vendor's prefix is not.
         cf = cold_formed(raw)
-        if cf is None:
-            cf = next((cold_formed(candidate) for candidate in candidates
-                      if cold_formed(candidate) is not None), None)
         if cf is not None:
-            # tr#280, David's decision 5 Sep 2026: alias a BARE cold-formed
-            # code to its Lysaght row, labelled as an assumed manufacturer,
-            # refusing on a miss. EXACT lookup only, by direct id
-            # reconstruction -- never through `canonical_candidates()` or
-            # `nearest()`, and never by adding a bare row to 90_Lists.
-            # Measured (falsifying a test, not reasoning about it): a bare
-            # Z20024 row entered the family index and let Z20015 -- genuinely
-            # 4.357 kg/m -- match Z20024's 7.065 kg/m as `nearest`, a 62%
-            # overstatement reported as a plausible, human-reviewable
-            # verdict. 1.5mm and 2.4mm BMT purlins are not near-misses of
-            # each other the way 250UB25.7/250UB26 are; `nearest` exists for
-            # rounding, not two genuinely different products sharing a depth.
+            # EXACT lookup only, by direct id reconstruction -- never
+            # through `canonical_candidates()` or `nearest()`, and never by
+            # adding a bare row to 90_Lists. Measured (falsifying a test,
+            # not reasoning about it): a bare Z20024 row entered the family
+            # index and let Z20015 -- genuinely 4.357 kg/m -- match
+            # Z20024's 7.065 kg/m as `nearest`, a 62% overstatement reported
+            # as a plausible, human-reviewable verdict. 1.5mm and 2.4mm BMT
+            # purlins are not near-misses of each other the way
+            # 250UB25.7/250UB26 are; `nearest` exists for rounding, not two
+            # genuinely different products sharing a depth.
             shape, depth, bmt = cf
             alias_id = f"LYS-{shape}{depth:03d}{round(bmt * 10):02d}"
             aliased = self.get(alias_id)
             if aliased is not None:
                 return aliased, "cold-formed-lysaght-assumed"
+        # Check the candidates too, not just the raw text: a schedule line
+        # reads 'P7 Z20015', and only the demarked form is recognisable as a
+        # purlin -- classification only (a person still needs to know this
+        # is a real, readable cold-formed code), never the alias above.
+        if cf is not None or any(
+            cold_formed(candidate) is not None for candidate in candidates
+        ):
             # Real, readable, and genuinely absent from 90_Lists even under
-            # the assumed manufacturer.
+            # the assumed manufacturer (or not bare enough to assume one).
             return None, "cold-formed"
         # Last, and only after every other path has failed to find the size
         # the drawing actually states: an estimator-decided substitution to a
