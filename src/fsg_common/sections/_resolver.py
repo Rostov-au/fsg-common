@@ -177,11 +177,13 @@ _TWO_NUMBER_TYPES = {"UB", "UC", "WB", "WC", "TFC", "TFB", "BT", "CT", "FL"}
 
 # Cold-formed C/Z purlin designations, as Stramit and Lysaght write them and as
 # real FSG drawings and take-offs use them: Z20015 = Z200 at 1.5 mm BMT,
-# C25024 = C250 at 2.4 mm. 90_Lists has no cold-formed entries at all, so
-# these can be *recognised* but not costed here. Recognising them is still
-# worth it -- it separates "this is a purlin the library doesn't carry" from
-# "this is unreadable text", which are very different problems for an
-# estimator.
+# C25024 = C250 at 2.4 mm. 90_Lists carries these only vendor-prefixed
+# (`LYS-Z20024`, resolved `exact`) -- corrected 6 Sep 2026, tr#280; it does
+# NOT carry a bare row for any of them (see the alias block in `resolve()`
+# below for why one must never be added). A bare code with no matching
+# vendor row is genuinely uncosted, which is still worth recognising -- it
+# separates "this is a purlin the library doesn't carry" from "this is
+# unreadable text", very different problems for an estimator.
 COLD_FORMED = re.compile(r"^([CZ])(\d{3})(\d{2})$")
 
 
@@ -680,8 +682,19 @@ class SectionLibrary:
         - ``nearest``        matched to the closest same-depth section (the
           library rounds masses); **needs an estimator's eye**, callers must
           surface it
-        - ``cold-formed``    a readable C/Z purlin code that 90_Lists does
-          not carry -- a library gap, not a bad read
+        - ``cold-formed-lysaght-assumed``  a BARE C/Z purlin code (no vendor
+          prefix) aliased to its Lysaght row -- David's decision, 5 Sep 2026
+          (tr#280): the only maker currently in the library, so a bare code
+          is assumed to mean that one, but the manufacturer is an
+          ASSUMPTION the drawing did not state and callers must surface it
+          as one, not as a fact. Exact alias only, refusing to
+          ``cold-formed`` on a miss -- never `nearest` (see `resolve()`'s
+          own comment at the alias check for the measured reason: a bare
+          library row would let genuinely different BMTs match each other
+          as `nearest`, a 62% mass error reported as a plausible verdict)
+        - ``cold-formed``    a readable C/Z purlin code, bare or vendor-
+          prefixed, that 90_Lists does not carry even under the assumed
+          manufacturer -- a library gap, not a bad read
         - ``material-mismatch``  aluminium/stainless/timber/etc. -- refuses
           rather than pricing it as steel
         - ``shape-modifier`` the notation names a cross-section 90_Lists has
@@ -729,10 +742,30 @@ class SectionLibrary:
         # Check the candidates too, not just the raw text: a schedule line
         # reads 'P7 Z20015', and only the demarked form is recognisable as a
         # purlin.
-        if cold_formed(raw) is not None or any(
-            cold_formed(candidate) is not None for candidate in candidates
-        ):
-            # Real, readable, and genuinely absent from 90_Lists.
+        cf = cold_formed(raw)
+        if cf is None:
+            cf = next((cold_formed(candidate) for candidate in candidates
+                      if cold_formed(candidate) is not None), None)
+        if cf is not None:
+            # tr#280, David's decision 5 Sep 2026: alias a BARE cold-formed
+            # code to its Lysaght row, labelled as an assumed manufacturer,
+            # refusing on a miss. EXACT lookup only, by direct id
+            # reconstruction -- never through `canonical_candidates()` or
+            # `nearest()`, and never by adding a bare row to 90_Lists.
+            # Measured (falsifying a test, not reasoning about it): a bare
+            # Z20024 row entered the family index and let Z20015 -- genuinely
+            # 4.357 kg/m -- match Z20024's 7.065 kg/m as `nearest`, a 62%
+            # overstatement reported as a plausible, human-reviewable
+            # verdict. 1.5mm and 2.4mm BMT purlins are not near-misses of
+            # each other the way 250UB25.7/250UB26 are; `nearest` exists for
+            # rounding, not two genuinely different products sharing a depth.
+            shape, depth, bmt = cf
+            alias_id = f"LYS-{shape}{depth:03d}{round(bmt * 10):02d}"
+            aliased = self.get(alias_id)
+            if aliased is not None:
+                return aliased, "cold-formed-lysaght-assumed"
+            # Real, readable, and genuinely absent from 90_Lists even under
+            # the assumed manufacturer.
             return None, "cold-formed"
         # Last, and only after every other path has failed to find the size
         # the drawing actually states: an estimator-decided substitution to a

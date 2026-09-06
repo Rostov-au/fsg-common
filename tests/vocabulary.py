@@ -105,6 +105,23 @@ ANCHORS = [
     ("UB610101", "detailer's glued designation order -> 610UB101, added 5 Sep 2026"),
     ("UB20018", "same dialect, a smaller depth -> 200UB18"),
     ("L75*6", "glued leading L, equal angle implied -> 75EA6"),
+    # tr#280, David's decision 5 Sep 2026: a bare cold-formed code aliases to
+    # its Lysaght row, labelled as an assumed manufacturer. All 9 of the
+    # archive's most common bare-vs-prefixed pairs (library-gap-ranked.md,
+    # 499 lines), added 6 Sep 2026.
+    ("Z20024", "bare, aliases to LYS-Z20024, 199 archive lines"),
+    ("C15019", "bare, aliases to LYS-C15019, 104 archive lines"),
+    ("Z20015", "bare, aliases to LYS-Z20015 (4.357 kg/m) -- NOT Z20024's "
+              "7.065; this is the exact pair a bare library row would have "
+              "let `nearest` confuse, 62% over"),
+    ("Z15019", "bare, aliases to LYS-Z15019, 48 archive lines"),
+    ("C10015", "bare, aliases to LYS-C10015, 30 archive lines"),
+    ("C20024", "bare, aliases to LYS-C20024, 28 archive lines"),
+    ("C15015", "bare, aliases to LYS-C15015, 5 archive lines"),
+    ("C15012", "bare, aliases to LYS-C15012, 5 archive lines"),
+    ("C15024", "bare, aliases to LYS-C15024, 1 archive line"),
+    ("Z99999", "a syntactically valid but non-existent depth/BMT -- the "
+              "alias must miss and refuse, never guess via nearest"),
 ]
 
 #: Behaviour both source resolvers share that MAY be wrong. Carried in the
