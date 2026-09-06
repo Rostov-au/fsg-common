@@ -196,6 +196,75 @@ def cold_formed(raw: str) -> tuple[str, int, float] | None:
     return shape, int(depth), int(bmt) / 10
 
 
+# tr#359, fsg-tender-review, 6 Sep 2026: an equal-angle triple with a glued
+# `L` at either end and no space ('L90x90x8', '90x90x8L'), or no `L`/type
+# word anywhere at all ('90x90x8'). Measured directly against FSG-25Q-319's
+# own `dimensions` field before writing this, not assumed (NOT `callouts` --
+# `section_recall` reads `callouts` only, so this population and that metric
+# never meet; see the field note below): the corpus that actually exists
+# there is the GLUED-L shape -- 51 occurrences, 25 distinct leg/leg/
+# thickness combinations, all of them a short "mark - notation" legend entry
+# ('aa - L45x45x5') -- not the fully bare one, which barely occurs as its
+# own isolated string once real drawing text is accounted for (an earlier
+# draft of this comment measured "bare, no L anywhere" and found the real
+# population was glued-L instead; corrected before this shipped, not
+# after). Both shapes are covered here since neither is riskier than the
+# other once `L`/type-word detection has already ruled out everything else.
+#
+# Of the 25 distinct combinations measured, 17 are non-standard thicknesses
+# or plainly garbled and correctly resolve to nothing today.
+#
+# WHAT THIS DOES NOT FIX, found the same night measuring the above: nearly
+# every one of these 51 legend entries is itself a short embedded string
+# ('aa - L45x45x5', not 'L45x45x5'), and `resolve()` anchors to the WHOLE
+# string. Checked directly against all 292 `dimensions` entries anywhere in
+# FSG-25Q-319 whose embedded notation names one of that job's 15 priced
+# sections (a larger population than the 51 above -- it also includes the
+# job's separate schedule-row `dimensions`, e.g. '1130 2 EA 70 x 70 x 5
+# 1809 9.8 9.8 345 T201/6/13/180'): only 1 of 292 resolves on the full
+# string this fix actually receives; the other 291 refuse, correctly,
+# because the section sits inside a longer string this fix was never meant
+# to parse. Extracting a section notation out of a legend line or a bill-
+# of-materials row is a parsing problem, not a resolver-tolerance one, and
+# nothing here touches it.
+#
+# EXACT lookup only, same discipline as `cold_formed()`'s Lysaght alias
+# above and for the identical reason: `canonical_candidates()`/`nearest()`
+# round to the closest library mass by design, which is exactly the
+# mechanism that would turn one of those 17 garbled triples into a
+# confident wrong section instead of an honest miss. This function commits
+# to nothing -- `resolve()` is the only caller allowed to decide what an
+# exact-or-refuse result means, matching the alias block's own shape.
+_BARE_OR_GLUED_L_TRIPLE = re.compile(
+    r"^L?\s*(\d+(?:\.\d+)?)\s*[xX*]\s*(\d+(?:\.\d+)?)\s*[xX*]\s*(\d+(?:\.\d+)?)\s*(L)?\s*$")
+
+
+def _bare_equal_angle(raw: str) -> tuple[str, str] | None:
+    """`(leg, thickness)` if `raw` is a three-number triple -- bare, or with
+    a glued `L` at either end -- and no type word anywhere in it. An EXACT
+    candidate to look up, never a `nearest` starting point. `None` for
+    anything already carrying its own SPACED `L` or another type word (the
+    existing dialect paths own those), a triple with `L` glued to BOTH ends
+    (not a spelling this dialect is known to use -- refusing rather than
+    guessing which one is noise), an unequal-leg triple (not an equal angle
+    notation at all -- a genuinely different shape), or anything that is not
+    a plain three-number triple in the first place.
+    """
+    stripped = str(raw).strip().upper()
+    if any(re.search(pattern, stripped) for pattern, _ in _TYPE_WORDS):
+        return None
+    m = _BARE_OR_GLUED_L_TRIPLE.match(stripped)
+    if not m:
+        return None
+    leg1, leg2, thickness, trailing_l = m.groups()
+    if stripped.startswith("L") and trailing_l:
+        return None  # 'L90x90x8L' -- not a spelling this dialect uses
+    leg1, leg2, thickness = _trim(leg1), _trim(leg2), _trim(thickness)
+    if leg1 != leg2:
+        return None
+    return leg1, thickness
+
+
 # Materials the steel library cannot price. The alloy designations are the
 # ones a real FSG structural aluminium specification names (6061-T6,
 # 6063-T5/T6, 5083-H116/H321, 5005-H34).
@@ -804,6 +873,22 @@ class SectionLibrary:
             # Real, readable, and genuinely absent from 90_Lists even under
             # the assumed manufacturer (or not bare enough to assume one).
             return None, "cold-formed"
+        # tr#359, 6 Sep 2026: a bare equal-angle triple, EXACT lookup only --
+        # same shape and same reason as the Lysaght alias above. This must
+        # never reach `canonical_candidates()`/`nearest()` above, which is
+        # why it is checked here directly on `raw` rather than folded into
+        # the dialect-expansion candidates those steps already tried: a
+        # candidate list `nearest()` can see is a candidate list `nearest()`
+        # WILL round, and a bare, non-standard triple rounding to the
+        # closest real angle by weight is the confident-wrong-section
+        # failure this whole card exists to keep out.
+        bare_ea = _bare_equal_angle(raw)
+        if bare_ea is not None:
+            leg, thickness = bare_ea
+            hit = self.get(f"{leg}EA{thickness}")
+            if hit is not None:
+                return hit, "canonical"
+            return None, "unresolved"
         # Last, and only after every other path has failed to find the size
         # the drawing actually states: an estimator-decided substitution to a
         # different, real size (substitutions.py's own docstring on why this
