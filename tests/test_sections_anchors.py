@@ -77,11 +77,20 @@ def test_a_doubled_or_malformed_suffix_still_refuses():
 
 def test_the_h_suffix_does_not_leak_into_an_unrelated_ambiguous_case():
     """The suffix rule only ever fires inside the already-narrow glued-angle
-    pattern. A bare triple with no leading L, H-suffixed or not, must still
-    be an honest miss -- this is not the bare-triple question tr#359 held
-    back pending its own safety check."""
-    assert sections.resolve("90x90x8H")[0] is None
-    assert sections.resolve("90x90x8")[0] is None
+    *pair* pattern (`L<leg>x<thickness>H`). tr#359's companion fix later made
+    a bare/glued-L *triple* (`90x90x8`, `L90x90x8`, `90x90x8L`) resolve on
+    its own -- so `sections.resolve("90x90x8")[0] is None` is no longer true
+    about the world, and asserting it here would pin a fact this package no
+    longer holds rather than the scoping rule this test exists to check.
+
+    What still needs pinning is that neither fix's own shape leaks into the
+    OTHER's: an `H` suffix stapled onto a full triple, whether the triple
+    already carries a leading or trailing glued `L`, is not a spelling
+    either dialect uses on its own, and must stay an honest miss rather than
+    one fix's leniency covering for the other's."""
+    assert sections.resolve("90x90x8H")[0] is None       # bare triple + H, no L anywhere
+    assert sections.resolve("L90x90x8H")[0] is None       # leading-L triple + H
+    assert sections.resolve("90x90x8LH")[0] is None       # trailing-glued-L triple + H
 
 
 def test_a_bare_depth_is_unresolved_with_its_candidates_named():
