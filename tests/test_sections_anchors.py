@@ -46,6 +46,44 @@ def test_the_spaced_and_library_spellings_agree():
     assert sections.resolve("200 PFC")[0] == sections.resolve("200PFC")[0]
 
 
+# --- tr#359, fsg-tender-review, 6 Sep 2026: a trailing H orientation suffix
+# on the glued-angle dialect must not block resolution, and must not be
+# treated as anything but noise to discard.
+
+def test_a_trailing_h_orientation_suffix_does_not_block_the_glued_angle_dialect():
+    """A transmission-tower drawing's own convention: `L90x6H` marks a
+    Horizontal member on the same section a diagonal carries unmarked. The
+    `H` names an orientation, not a different section -- it must resolve
+    identically to the unmarked form."""
+    with_h, how_with = sections.resolve("L90x6H")
+    without_h, how_without = sections.resolve("L90x6")
+    assert with_h == without_h == sections.resolve("90EA6")[0]
+    assert how_with == how_without == "canonical"
+
+
+def test_the_h_suffix_is_case_and_space_insensitive_like_the_rest_of_the_dialect():
+    for raw in ("L90x6H", "L90X6H", "l90x6h", "L90x6 H"):
+        section, how = sections.resolve(raw)
+        assert section is not None and section.section_id == "90EA6", raw
+
+
+def test_a_doubled_or_malformed_suffix_still_refuses():
+    """The fix is scoped to exactly one trailing `H`, not "any junk after the
+    numbers" -- a second letter is not a known convention and must not be
+    silently swallowed."""
+    section, how = sections.resolve("L90x6HH")
+    assert section is None
+
+
+def test_the_h_suffix_does_not_leak_into_an_unrelated_ambiguous_case():
+    """The suffix rule only ever fires inside the already-narrow glued-angle
+    pattern. A bare triple with no leading L, H-suffixed or not, must still
+    be an honest miss -- this is not the bare-triple question tr#359 held
+    back pending its own safety check."""
+    assert sections.resolve("90x90x8H")[0] is None
+    assert sections.resolve("90x90x8")[0] is None
+
+
 def test_a_bare_depth_is_unresolved_with_its_candidates_named():
     """`250UB` is genuinely three commercial sizes. The drawing has not
     chosen, so the resolver must not either -- but it names them, or the
