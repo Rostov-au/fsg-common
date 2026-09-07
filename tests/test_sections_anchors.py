@@ -156,6 +156,75 @@ def test_a_bare_code_with_no_matching_vendor_row_also_refuses():
     assert how == "cold-formed"
 
 
+# --- STR-/LYS- cross-vendor aliasing (fsg-tender-review#184 Q27, ANSWERED
+# 7 Sep 2026) -------------------------------------------------------------
+
+def test_a_vendor_prefixed_code_aliases_to_the_other_vendors_row():
+    """David's answer to Q27: Stramit and Lysaght purlins at matching
+    shape/depth/BMT are a genuine standard-product fact. 90_Lists carries
+    no `STR-` rows at all, so each of these previously refused
+    `cold-formed`; now they alias to the real `LYS-` row and return the
+    LIBRARY's mass, never the archive's own STR- figure (0.34% apart for
+    C20024, per docs/purlin-residue.md in fsg-tender-review)."""
+    for raw, expected_id, expected_mass in (
+        ("STR-C20024", "LYS-C20024", 7.064),
+        ("STR-C10015", "LYS-C10015", 2.532),
+        ("STR-C20019", "LYS-C20019", 5.593),
+        ("STR-Z20019", "LYS-Z20019", 5.593),
+    ):
+        section, how = sections.resolve(raw)
+        assert section is not None, raw
+        assert section.section_id == expected_id, raw
+        assert section.mass_kg_per_m == expected_mass, raw
+        assert how == "cold-formed-vendor-equivalent", raw
+
+
+def test_the_alias_never_crosses_shape_as_well_as_vendor():
+    """STR-Z20019 and STR-C20019 share a mass at this depth/BMT but are
+    different rows -- the alias may cross the vendor, never the shape."""
+    z, _how = sections.resolve("STR-Z20019")
+    c, _how = sections.resolve("STR-C20019")
+    assert z.section_id == "LYS-Z20019"
+    assert c.section_id == "LYS-C20019"
+    assert z.section_id != c.section_id
+
+
+def test_an_already_exact_vendor_row_is_not_rerouted_through_the_alias():
+    """The alias only fires when the WRITTEN vendor's own row is missing --
+    a code the library already carries stays `exact`, never `cold-formed-
+    vendor-equivalent`."""
+    section, how = sections.resolve("LYS-C20024")
+    assert section.section_id == "LYS-C20024"
+    assert how == "exact"
+
+
+def test_a_vendor_prefixed_code_with_no_equivalent_either_way_still_refuses():
+    """`STR-C30024` has no `LYS-C30024` row in the packaged library either
+    (docs/purlin-residue.md: that pair's Lysaght mass is archive-only, not
+    in 90_Lists) -- stays an honest `cold-formed` refusal, not a guess at
+    the nearest real depth."""
+    section, how = sections.resolve("STR-C30024")
+    assert section is None
+    assert how == "cold-formed"
+    assert sections.library().get("LYS-C30024") is None
+
+
+def test_a_vendor_prefixed_nonexistent_depth_bmt_still_refuses():
+    section, how = sections.resolve("STR-Z99999")
+    assert section is None
+    assert how == "cold-formed"
+
+
+def test_the_vendor_alias_is_exact_never_through_nearest():
+    """Falsifies the mechanism: no vendor-prefixed candidate spelling is
+    itself library-resolvable independently of this alias, so `nearest()`
+    could never reach one on its own."""
+    from fsg_common.sections import canonical_candidates
+    for raw in ("STR-C20024", "STR-C10015", "STR-C20019"):
+        for candidate in canonical_candidates(raw):
+            assert sections.library().get(candidate) is None, (raw, candidate)
+
+
 # --- the three kinds of modifier, which must not blur ---------------------
 
 def test_a_material_modifier_refuses():
@@ -254,6 +323,7 @@ def test_every_anchor_resolves_without_raising(raw, rule):
     """The rule text is in the id so a failure names the rule it broke."""
     section, how = sections.resolve(raw)
     assert how in ("exact", "canonical", "nearest", "cold-formed",
+                   "cold-formed-vendor-equivalent",
                    "material-mismatch", "shape-modifier", "substitution",
                    "unresolved"), f"{raw}: {rule}"
     if section is not None:
