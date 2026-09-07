@@ -18,14 +18,16 @@ threshold cannot, and a snapshot one day old has been 17 rows short.
 `data_only=True` is not optional: the mass columns are formulas, and reading
 them as text turns every mass into None silently.
 
-**Read-only.** openpyxl must never write to the live workbook on S:. This
-script opens read_only=True and writes only into
-`src/fsg_common/sections/data/`.
+**Read-only.** openpyxl must never write to the live workbook. This script
+opens read_only=True and writes only into `src/fsg_common/sections/data/`.
 
 ONE SNAPSHOT, ONE PLACE. This used to live in `fsg-tender-review`, writing
 into that repo, and the Bluebeam toolkit read the file across a sibling
 checkout. Both now read the copy this script generates inside the package,
-so a consumer cannot answer from a snapshot vintage it did not choose.
+so a consumer cannot answer from a snapshot vintage it did not choose --
+**consolidated here 7 Sep 2026** (fsg-common#6/#12): fsg-tender-review's own
+`data/fsg_sections.json` and `scripts/refresh_from_workbook.py` are retired,
+and this is the only regenerator either consumer has left.
 """
 
 from __future__ import annotations
@@ -38,19 +40,84 @@ import os
 import sys
 from pathlib import PureWindowsPath
 
-# Corrected 31 Aug 2026. This read
-# `S:\fsg-estimating-tools\templates\FSG_Estimating_Template.xlsx`, which does
-# not exist and never has -- S:'s root holds APPS/Admin/Business-Dev/EDA/
-# Estimating/LISTJOBS, no `fsg-estimating-tools`. That path is the *repo's*
-# layout written as though it were the share's. So the drift check CLAUDE.md
-# prescribes ("--check reports drift") could only ever report "workbook not
-# found", and the one number it exists to produce was never produced. The
-# regeneration that did work must have been given --workbook explicitly.
+# Ported from fsg-tender-review's own copy of this script, 7 Sep 2026 (the
+# data-twin consolidation, fsg-common#6/#12) -- this default moved there on
+# 4 Sep, after this file was first split off on 5 Sep, so this package had
+# fallen behind: it still pointed at S:, which was ALREADY known wrong (see
+# the superseded comment tender-review carried and this one now carries
+# too). Porting the fix rather than picking the older default is the point
+# of "make fsg-common's script the only regenerator" -- consolidating onto a
+# stale default would have reintroduced the bug the 4 Sep decision fixed.
+#
+# Corrected 31 Aug 2026, in the source this was ported from. That version
+# read `S:\fsg-estimating-tools\templates\FSG_Estimating_Template.xlsx`,
+# which does not exist and never has -- S:'s root holds APPS/Admin/
+# Business-Dev/EDA/Estimating/LISTJOBS, no `fsg-estimating-tools`. That path
+# is the *repo's* layout written as though it were the share's. So the drift
+# check could only ever report "workbook not found", and the one number it
+# exists to produce was never produced. The regeneration that did work must
+# have been given --workbook explicitly.
 #
 # The live copy is the one the workbook tooling deploys to and backs up
-# beside (FSG_Estimating_Template.xlsx.bak-<date>-pre-<change>, whose names
-# match this repo's own commit history).
-DEFAULT_WORKBOOK = r"S:\Estimating\Reference\FSG_Estimating_Template.xlsx"
+# beside (FSG_Estimating_Template.xlsx.bak-<date>-pre-<change>).
+#
+# Superseded 4 Sep 2026 by David's decision to move the library's provenance
+# from the S: copy to the tracked template in `fsg-estimating-tools`. The S:
+# copy is no longer the source: it still carries the coating rates and the
+# fictional CHS wall thicknesses the repo template had corrected, so
+# regenerating from it would put them back.
+#
+# Leaving the default pointed at S: would have recreated the bug described
+# above in the opposite direction -- a bare `--check` would compare the
+# committed copy against a workbook it did not come from, refuse with
+# PROVENANCE MISMATCH, and produce no drift number at all. The default has to
+# follow the decision, or the drift check stops working the day it is made.
+_SIBLING_TEMPLATE = os.path.join(
+    os.path.dirname(__file__), "..", "..",
+    "fsg-estimating-tools", "templates", "FSG_Estimating_Template.xlsx")
+
+# fsg-common sits alongside the other repos in the same layout CLAUDE.md
+# documents. FSG_ESTIMATING_TEMPLATE overrides it for a checkout arranged
+# differently, rather than making every call pass --workbook.
+DEFAULT_WORKBOOK = os.environ.get("FSG_ESTIMATING_TEMPLATE") or os.path.normpath(
+    os.path.abspath(_SIBLING_TEMPLATE))
+
+# `_provenance.source` is a path that lives in *data* (ADR 14): written on one
+# host, read back on another, including CI, where this machine's home
+# directory names nothing. Recording the absolute path would make
+# `same_workbook` answer False everywhere except the machine that generated it
+# -- a refusal that reads as a real provenance mismatch and is not one.
+#
+# So the sibling template is recorded in the layout-relative form the repos
+# share, and both sides of the comparison go through this function. A
+# workbook anywhere else keeps its literal path: there is no portable name
+# for it, and inventing one would be guessing.
+PORTABLE_SIBLING = "../fsg-estimating-tools/templates/FSG_Estimating_Template.xlsx"
+
+
+def portable_source(path):
+    r"""The form of `path` that means the same file on every host.
+
+    The sibling template collapses to `PORTABLE_SIBLING`; everything else is
+    returned unchanged, `S:\...` included -- the share is already
+    host-independent wherever it is mapped at all.
+
+    Comparison is `PureWindowsPath`-based for the same reason `same_workbook`
+    is: `os.path` answers differently on Linux and raises nothing when it does.
+    """
+    if not path:
+        return path
+    try:
+        here = PureWindowsPath(os.path.normpath(os.path.abspath(path)))
+        sibling = PureWindowsPath(
+            os.path.normpath(os.path.abspath(_SIBLING_TEMPLATE)))
+    except (OSError, ValueError):
+        return path
+    if str(here).casefold() == str(sibling).casefold():
+        return PORTABLE_SIBLING
+    return path
+
+
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "src", "fsg_common",
                         "sections", "data")
 
@@ -260,7 +327,9 @@ def provenance_refusals(*, workbook: str,
     problems: list[str] = []
 
     recorded = prov.get("source")
-    if not same_workbook(workbook, recorded):
+    # Both sides through `portable_source`, so the sibling template compares
+    # equal whether it was recorded absolute (pre-4 Sep) or relative.
+    if not same_workbook(portable_source(workbook), portable_source(recorded)):
         problems.append(
             f"the committed copy came from a DIFFERENT workbook.\n"
             f"      committed: {recorded or '(no source recorded)'}\n"
@@ -347,7 +416,7 @@ def with_provenance(payload: dict, workbook: str,
     return {
         "_provenance": {
             **prov,
-            "source": workbook,
+            "source": portable_source(workbook),
             "sheet": SHEET_LISTS,
             "cells": CELLS,
             "generated": dt.date.today().isoformat(),
