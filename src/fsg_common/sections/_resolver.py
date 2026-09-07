@@ -364,28 +364,50 @@ _DIM_GROUP = re.compile(r"\d[\d.]*(?:\s*(?:SQ\.?\s*)?[X*]\s*\d[\d.]*)+")
 # '10 THK', '10 THICK', 'THK 10' -- an explicit thickness callout wins outright.
 _THK_BEFORE = re.compile(r"(\d[\d.]*)\s*(?:MM\s*)?TH(?:ICK|CK|K)\b")
 _THK_AFTER = re.compile(r"\bTH(?:ICK|CK|K)\.?\s*(\d[\d.]*)")
+# A number written directly against the plate word, either side of it:
+# '10 PL 100 x 6000', 'PLATE 12 250 x 250', '20 BASEPLATE'. The optional
+# qualifier is the list `_TYPE_WORDS` accepts in front of PL/PLATE, so
+# '20 BASEPLATE' and '20 GUSSET PLATE' read the same way as '20 PL'.
+_PL_QUALIFIER = (r"(?:BASE|CAP|END|GUSSET|SPLICE|STIFFENER|SEAT|SOLE|COVER|CLEAT|"
+                 r"PACKER|PACK|SHIM|WEB|FLANGE|FACE|TOP|BOTTOM|BOT)?")
+_PL_BEFORE = re.compile(r"(\d[\d.]*)\s*(?:MM\s*)?" + _PL_QUALIFIER
+                        + r"\s*(?:PLATE|PL)(?![A-Z])")
+_PL_AFTER = re.compile(r"(?<![A-Z])" + _PL_QUALIFIER + r"\s*(?:PLATE|PL)\.?\s*(\d[\d.]*)")
 
 
 def _plate_thickness(text: str, nums: list[str]) -> str:
     """Which number in a plate callout is the thickness.
 
-    Drawings write it three ways, and the library files plate by thickness
+    Drawings write it four ways, and the library files plate by thickness
     only:
 
         '12 mm PLATE'            -> 12   the only number
         '200 x 200 x 10 PL'      -> 10   smallest of the dimension group
         'PLATE 10 THK 250 x 250' -> 10   an explicit THK callout beats position
+        '10 PL 100 x 6000'       -> 10   a number against the word, outside
+                                         the group, beats the group minimum
 
     Smallest, not last: a plate's thickness is by definition its least
     dimension, and position is a convention that differs between a drawing
     ('200 x 10 PL') and a detailer ('PL10X200'). Taking the last number read
     the detailer's form as a 200 mm plate.
+
+    The fourth form, 7 Sep 2026: `10 PL 100 x 6000` is a 10 mm plate, 100
+    wide, 6000 long, and the group minimum read it as 100PL -- ten to twenty
+    times the mass, labelled canonical. A number written against the PL
+    token and OUTSIDE the dimension group is the thickness the same way a
+    THK callout is. Only outside: in `200 x 200 x 10 PL` the adjacent 10 is
+    the group's own last member, and the minimum rule answers it unchanged.
     """
     for pattern in (_THK_BEFORE, _THK_AFTER):
         found = pattern.search(text)
         if found:
             return _trim(found.group(1))
     group = _DIM_GROUP.search(text)
+    for pattern in (_PL_BEFORE, _PL_AFTER):
+        found = pattern.search(text)
+        if found and not (group and group.start() <= found.start(1) < group.end()):
+            return _trim(found.group(1))
     if group:
         members = _NUM.findall(group.group(0))
         if len(members) >= 2:
@@ -562,13 +584,21 @@ def canonical_candidates(raw: str) -> list[str]:
 
     if kind in _TWO_NUMBER_TYPES and len(nums) >= 2:
         add(f"{nums[0]}{kind}{nums[1]}")
-        if kind == "FL":
+        if kind == "FL" and len(nums) == 2:
             # A flat bar is filed width-then-thickness, and a drawing writes it
             # either way round: '100 X 10 FL' resolved and 'FL 100 X 10' did
             # not. Offer the sorted form as well -- widest first, which is what
             # the library uses -- so both spellings reach 100FL10. Offered
             # second, so an exact match on the written order still wins.
-            wide, thin = max(nums[:2], key=float), min(nums[:2], key=float)
+            #
+            # Exactly two numbers, 7 Sep 2026. With three, the first is a
+            # count or a length, not a dimension, and sorting the first two
+            # read `6 x 100 x 10 FL` (six off, 100 x 10) as 100FL6 -- 40%
+            # under, labelled canonical. The written-order candidate above
+            # is still offered, so `100 x 10 FL x 6000` keeps resolving; the
+            # count-first spelling is an honest miss until a drawing's
+            # quantity grammar is read on purpose rather than by accident.
+            wide, thin = max(nums, key=float), min(nums, key=float)
             add(f"{wide}FL{thin}")
     elif kind == "PFC" and nums:
         add(f"{nums[0]}PFC")  # flange width is implied by depth in the library
@@ -596,7 +626,14 @@ def canonical_candidates(raw: str) -> list[str]:
     elif kind == "SHS" and nums:
         if len(nums) >= 3 and nums[0] == nums[1]:
             add(f"{nums[0]}SHS{nums[2]}")
-        elif len(nums) >= 2:
+        elif len(nums) == 2:
+            # `100 SHS 3`, `100 x 100 SHS`: side and wall, or a bare head.
+            # Exactly two, 7 Sep 2026: with three numbers whose first pair
+            # differ, `100 x 50 x 3 SHS` is a rectangular section written
+            # with the wrong word, and the old `>= 2` branch made it 100SHS3
+            # -- 36% over, labelled canonical. It now stays unresolved; the
+            # library's row for those sides is an RHS, and naming it is the
+            # estimator's call to make, not the resolver's to assert.
             add(f"{nums[0]}SHS{nums[-1]}")
     elif kind == "RHS" and len(nums) >= 3:
         add(f"{nums[0]}x{nums[1]}RHS{nums[2]}")
