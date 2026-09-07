@@ -151,10 +151,25 @@ FSG_CREDENTIAL_RE = re.compile(
 #: path (`/p`, `./p`, `../p`, `~/p`, `C:\p`) or a template expression
 #: (`{{ ... }}`, `${VAR}`) -- the two shapes that cost this pattern real
 #: coverage before they were measured and fixed.
+#:
+#: The operator spacing is `[ \t]*`, NOT `\s*` -- found by tender-review's
+#: OWN test suite (`test_an_assignment_split_across_a_newline_is_not_a_
+#: secret`) failing against crm's literal pattern, not by inspection. `\s`
+#: matches a real newline, so `password =\n'secret'\n` (an assignment split
+#: across a line) matched, and tender-review's own history names the exact
+#: incident this reproduces: `FSG_WORKBOOK_PASSWORD=` with an EMPTY value
+#: followed by any non-blank next line matched and reported that line's
+#: first token as the password. crm's copy of this pattern carries the bug;
+#: tender-review's OWN generic-password pattern (a DIFFERENT rule at the
+#: time, before this consolidation) already used `[ \t]*` for exactly this
+#: reason. Kept as `[ \t]*` here -- the better reasoning, not crm's literal
+#: text -- consistent with the module's own "read both, don't union"
+#: instruction; this is the one place crm's pattern needed a real edit
+#: rather than a straight port.
 GENERIC_PASSWORD_RE = re.compile(
     r"password"
     r"['\"]?"                # the JSON key's own closing quote
-    r"\s*[=:]\s*"            # `=` (python/env) or `:` (json/yaml)
+    r"[ \t]*[=:][ \t]*"      # `=` (python/env) or `:` (json/yaml)
     r"['\"]"
     r"(?!\s)"                # not the space after a CLOSING quote
     r"(?![~.]{0,2}/)"        # not /p, ./p, ../p, ~/p

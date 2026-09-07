@@ -148,6 +148,19 @@ def test_a_value_behind_a_literal_escape_sequence_is_still_caught():
     assert any("hardcoded password" in h for h in hits)
 
 
+def test_an_assignment_split_across_a_REAL_newline_is_not_a_secret():
+    """Found by fsg-tender-review's own test suite failing against crm's
+    literal pattern, not by inspection: `\\s*` around the operator matches
+    a REAL newline (not a literal escape sequence -- this is the opposite
+    case from the test above), so `password =` on one line and a value on
+    the next used to match, and tender-review's own history names the
+    exact incident this reproduces -- `FSG_WORKBOOK_PASSWORD=` with an
+    EMPTY value followed by any non-blank next line matched and reported
+    that line's first token as the password."""
+    hits = _scan_text('password =\n"s3cr3tVal123"\n')
+    assert not any("hardcoded password" in h for h in hits)
+
+
 # --- falsification: prove the fix actually does something --------------------
 
 def test_falsify_the_identifier_prefix_fix_by_reintroducing_the_lookbehind():
