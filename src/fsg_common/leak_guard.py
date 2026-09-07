@@ -406,9 +406,20 @@ def _read_body(path: str, path_sources: dict[str, str] | None) -> str | None:
         commit = path_sources.get(path)
         if commit is None:
             return None
+        # `text=True` would have `subprocess` decode the blob with the
+        # PLATFORM'S default encoding (cp1252 on Windows) and raise
+        # `UnicodeDecodeError` out of its own reader thread on a genuinely
+        # binary blob (a `.zip`, an image) -- found by running this against
+        # a real historical binary file, not assumed. Captured as bytes and
+        # decoded the same permissive way the working-tree read already is
+        # (`errors="ignore"`): a false "text" verdict on binary content
+        # costs a few wasted regex passes, which is the same tradeoff
+        # `_looks_like_text`'s own docstring already accepts, not a new one.
         out = subprocess.run(["git", "show", f"{commit}:{path}"],
-                             capture_output=True, text=True, check=False)
-        return out.stdout if out.returncode == 0 else None
+                             capture_output=True, check=False)
+        if out.returncode != 0:
+            return None
+        return out.stdout.decode("utf-8", errors="ignore")
 
 
 def _allowed(path: str, config: GuardConfig) -> bool:

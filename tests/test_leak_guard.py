@@ -313,6 +313,58 @@ def test_range_content_read_falls_back_to_the_commit_that_touched_the_path(
     assert any("workbook/register password" in p for p in problems), problems
 
 
+def test_a_binary_blob_reached_via_the_historical_fallback_does_not_crash(
+        throwaway_repo):
+    """Found by running this against a real historical binary file, not
+    assumed: `subprocess.run(..., text=True)` decodes a `git show` blob
+    with the PLATFORM'S default encoding (cp1252 on Windows) and raises
+    `UnicodeDecodeError` out of its own reader thread on genuinely binary
+    content -- a zip, in the real case that found this
+    (fsg-bluebeam-steel-standards, `repo-HEAD.zip`, a known, already-
+    disclosed historical mistake exempted by path so the extension rule
+    does not block it, which is exactly what put it on the content-read
+    path this test reproduces). `check()` must treat it the same
+    permissive way binary-shaped disk content already is (scanned as
+    best-effort text, not crashed on)."""
+    d = throwaway_repo
+    zip_path = os.path.join(d, "archive.zip")
+    # A real zip local-file-header signature plus a byte cp1252 -- Windows'
+    # default text codec, and what the real crash decoded with -- leaves
+    # UNDEFINED (0x81/0x8D/0x8F/0x90/0x9D). The real failure was "can't
+    # decode byte 0x9d"; a byte range that happens to be valid cp1252
+    # would pass `text=True` silently and not exercise this at all.
+    with open(zip_path, "wb") as fh:
+        fh.write(b"PK\x03\x04" + bytes(range(200, 256)) + b"\x9d\x00\x01\x02")
+    _git("add", "archive.zip", cwd=d)
+    _git("commit", "-q", "-m", "add archive", cwd=d)
+    _git("rm", "-q", "archive.zip", cwd=d)
+    _git("commit", "-q", "-m", "remove archive", cwd=d)
+
+    assert not os.path.exists(zip_path)
+
+    # Exempted by path, same as the real case -- otherwise the extension
+    # rule blocks it before content is ever read, and this test would pass
+    # without exercising the crash at all.
+    exempt_config = leak_guard.GuardConfig(
+        repo_holds="x", client_data_lives="x",
+        allowed_paths=(re.compile(r"^archive\.zip$"),))
+
+    old_cwd = os.getcwd()
+    os.chdir(d)
+    try:
+        sources = leak_guard._range_path_sources(
+            "4b825dc642cb6eb9a060e54bf8d69288fbee4904..HEAD")
+        assert "archive.zip" in sources
+        # Must not raise. This config sets no PII/secret pattern that would
+        # match random bytes, so the honest outcome is "no problems", not
+        # a crash.
+        problems = leak_guard.check(["archive.zip"], exempt_config,
+                                    path_sources=sources)
+    finally:
+        os.chdir(old_cwd)
+    assert problems == [], problems
+
+
 def test_a_path_absent_from_both_disk_and_every_range_commit_still_refuses(
         throwaway_repo):
     """The fallback must not paper over a genuine gap: a path that never
