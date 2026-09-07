@@ -28,8 +28,7 @@ from vocabulary import VOCABULARY, build, library_sweep
 
 from fsg_common import sections
 
-VERDICTS = {"exact", "canonical", "nearest", "cold-formed",
-            "cold-formed-lysaght-assumed", "material-mismatch",
+VERDICTS = {"exact", "canonical", "nearest", "cold-formed", "material-mismatch",
             "shape-modifier", "substitution", "unresolved"}
 
 
