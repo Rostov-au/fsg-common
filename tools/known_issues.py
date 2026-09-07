@@ -4,13 +4,14 @@
     python tools/known_issues.py
 
 Three behaviours found while proving `fsg_common.sections` matches the two
-resolvers it replaces. Issues 1 and 2 are not fixed here: this package
-consolidates the two copies without moving an answer neither source has
-already agreed on, and each of those changes an answer that is still an
-open estimator question. Issue 3 is the exception, fixed 5 Sep 2026 --
-both sources had already agreed on the same answer three days before this
-package caught up, so applying it here was catching up to a decision
-already made, not making a new one.
+resolvers it replaces. Issue 2 is not fixed here: this package consolidates
+the two copies without moving an answer neither source had already agreed
+on, and it changes an answer that is still an open estimator question.
+Issues 1 and 3 are the exceptions -- 3 fixed 5 Sep 2026 because both
+sources had already agreed on the same answer three days before this
+package caught up (catching up to a decision already made, not making a
+new one), and 1 fixed 7 Sep 2026 once fsg-tender-review#184 Q25 actually
+answered the question this package had been carrying rather than settling.
 
 This is a script rather than a prose list on purpose. A reproducing command
 in a document goes stale silently the day someone fixes the thing it
@@ -39,27 +40,24 @@ def rule(title: str) -> None:
 
 
 def issue_1_chs_wall() -> bool:
-    """The one notation the two source resolvers disagree about.
-
-    Not a defect and not new. It is item 1 of
-    Rostov-au/fsg-tender-review#184, "Questions for the estimators", and the
-    standing instruction on #180 is that both resolvers stay as they are
-    until an estimator answers. Recorded here so that adopting this package
-    does not quietly become the answer.
+    """RESOLVED 7 Sep 2026. Was the one notation the two source resolvers
+    disagreed about -- item 1 of Rostov-au/fsg-tender-review#184, "Questions
+    for the estimators". David, relaying the estimating team's answer: read
+    `CHS 6.4` as the metric 6.40 wall, matching all 94 checkable archive
+    lines. Both resolvers now converge on `canonical`; the `RoundingPolicy`
+    split (`_policy.py`) that carried the disagreement is deleted. Kept as a
+    reproducer rather than removed, same convention as issue 3 below.
     """
-    rule("1. `273 CHS 6.4` -- the open estimator question, carried not settled")
-    tr = sections.resolve("273 CHS 6.4", sections.TENDER_REVIEW)
-    bb = sections.resolve("273 CHS 6.4", sections.BLUEBEAM)
-    print(f"  tender-review policy : {tr[0].section_id} @ {tr[0].mass_kg_per_m} kg/m  -> {tr[1]!r}")
-    print(f"  bluebeam policy      : {bb[0].section_id} @ {bb[0].mass_kg_per_m} kg/m  -> {bb[1]!r}")
+    rule("1. `273 CHS 6.4` -- the open estimator question (RESOLVED 7 Sep 2026)")
+    section, how = sections.resolve("273 CHS 6.4")
+    print(f"  {section.section_id} @ {section.mass_kg_per_m} kg/m  -> {how!r}")
     print()
-    print("  Same section, same mass. The verdict differs, and the verdict is what")
-    print("  decides whether an estimator is asked to look at the line.")
     print("  The library's ladder is imperial pipe (6.35); FSG's three most common")
-    print("  archive walls are metric (3.2, 4.8, 6.4). Whether `CHS 6.4` means the")
-    print("  metric wall is an estimator's knowledge, not a developer's decision.")
-    live = tr[1] != bb[1]
-    print(f"\n  STILL OPEN: {live}   (False means the policies collapsed -- check why)")
+    print("  archive walls are metric (3.2, 4.8, 6.4). The estimating team's answer:")
+    print("  `CHS 6.4` means the metric wall, matching all 94 checkable archive")
+    print("  lines (0 closer to imperial). Both resolvers converge on `canonical`.")
+    live = how != "canonical"
+    print(f"\n  STILL LIVE: {live}   (True means the answer stopped applying -- check why)")
     return live
 
 
@@ -139,7 +137,8 @@ def main() -> int:
     print("fsg-common -- known issues, re-derived live")
     print(f"library: {sections.vintage_line()}")
     results = [
-        ("1  273 CHS 6.4, the open estimator question", issue_1_chs_wall()),
+        ("1  273 CHS 6.4, the open estimator question (fixed 7 Sep 2026)",
+         issue_1_chs_wall()),
         ("2  mass_of() returns kg/m2 for floor plate", issue_2_mass_of_floor_plate()),
         ("3  SS is not recognised as stainless (fixed 5 Sep 2026)",
          issue_3_ss_is_not_stainless()),

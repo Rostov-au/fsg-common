@@ -6,15 +6,16 @@ disagreement. That test exists because the two copies were found, on 26 Aug
 2026, to disagree on seven notations, one of them a different mass.
 
 Once both repos import this package there are no twins left to compare, so
-the vocabulary changes job rather than retiring. Here it does two things:
+the vocabulary changes job rather than retiring: every notation in it
+resolves without raising, the cheapest broad regression net there is.
 
-1. Every notation in it resolves, under BOTH rounding policies, without
-   raising. The vocabulary is the set of notations known to exercise a
-   grammar branch, so it is the cheapest broad regression net there is.
-2. The one notation the twins genuinely disagree about still produces the
-   two different answers, on purpose. If that ever collapses to one, either
-   an estimator answered the question and the policy should be deleted, or
-   the package silently settled it -- and those must not look alike.
+**The one notation the twins genuinely disagreed about is answered now.**
+`273 CHS 6.4` used to produce two different verdicts on purpose, gated by a
+`RoundingPolicy` each consumer picked (`_policy.py`, deleted 7 Sep 2026).
+fsg-tender-review#184 Q25 settled it -- both resolvers converge on
+`canonical` -- so the policy split, `TENDER_REVIEW`/`BLUEBEAM`, and the
+tests that pinned the disagreement are gone; the notation is now a plain
+anchor in `vocabulary.ANCHORS` like any other answered question.
 
 The live three-way comparison against both source repos is
 `tools/parity_report.py`, which reads them at a pinned git ref. It is not a
@@ -23,7 +24,7 @@ test: it needs both sibling checkouts, which CI does not have.
 from __future__ import annotations
 
 import pytest
-from vocabulary import KNOWN_OPEN_QUESTION, VOCABULARY, build, library_sweep
+from vocabulary import VOCABULARY, build, library_sweep
 
 from fsg_common import sections
 
@@ -36,10 +37,9 @@ def corpus():
     return build(sections.PACKAGED_SNAPSHOT)
 
 
-@pytest.mark.parametrize("policy", sections.ALL_POLICIES, ids=lambda p: p.name)
 @pytest.mark.parametrize("raw", VOCABULARY)
-def test_the_vocabulary_resolves_under_both_policies(raw, policy):
-    section, how = sections.resolve(raw, policy)
+def test_the_vocabulary_resolves(raw):
+    section, how = sections.resolve(raw)
     assert how in VERDICTS, raw
     if how in ("unresolved", "material-mismatch", "shape-modifier", "cold-formed"):
         assert section is None, raw
@@ -79,47 +79,25 @@ def test_every_library_section_resolves_to_itself(corpus):
     assert not misses, f"{len(misses)} section(s) did not round-trip: {misses[:10]}"
 
 
-# --- the open question ----------------------------------------------------
+# --- the question that used to be open -------------------------------------
 
-@pytest.mark.parametrize("raw", KNOWN_OPEN_QUESTION)
-def test_open_question_is_not_settled(raw):
-    """`273 CHS 6.4` is the one notation the two source resolvers disagree
-    about, and it is an open question for FSG's estimators
-    (Rostov-au/fsg-tender-review#184 item 1), not a defect.
-
-    Both policies find the same section at the same mass. What differs is the
-    verdict, and the verdict decides whether an estimator is asked to look.
-
-    DELETE THIS TEST when the question is answered. It exists to stop the
-    consolidation quietly picking a side, and it should not outlive the
-    question it guards.
-    """
-    tr_section, tr_how = sections.resolve(raw, sections.TENDER_REVIEW)
-    bb_section, bb_how = sections.resolve(raw, sections.BLUEBEAM)
-    assert tr_section == bb_section, "the section must not move, only the verdict"
-    assert tr_how == "canonical"
-    assert bb_how == "nearest"
+def test_the_chs_wall_question_is_settled_not_silently_picked():
+    """`273 CHS 6.4` used to produce two different verdicts, gated by a
+    `RoundingPolicy` each consumer picked (`_policy.py`, deleted 7 Sep 2026
+    once fsg-tender-review#184 Q25 answered it). This pins that the answer
+    is the one actually decided -- `canonical`, not a silent default -- not
+    just that resolving no longer raises."""
+    section, how = sections.resolve("273 CHS 6.4")
+    assert section.section_id == "273CHS6.35"
+    assert how == "canonical"
 
 
-def test_the_policies_differ_on_that_and_nothing_else(corpus):
-    """The policy is a scalpel or it is a second resolver. This measures
-    which: exactly one notation in the whole corpus may answer differently
-    under the two policies."""
-    moved = []
-    for raw in corpus:
-        a = sections.resolve(raw, sections.TENDER_REVIEW)
-        b = sections.resolve(raw, sections.BLUEBEAM)
-        if a != b:
-            moved.append(raw)
-    assert moved == KNOWN_OPEN_QUESTION, moved
-
-
-def test_both_policies_apply_whole_number_rounding(corpus):
-    """Only the one-decimal clause differs. `250 UB 25.7` against the
-    library's `250UB26` is `canonical` under both."""
-    for policy in sections.ALL_POLICIES:
-        section, how = sections.resolve("250UB25.7", policy)
-        assert (section.section_id, how) == ("250UB26", "canonical"), policy.name
+def test_whole_number_rounding_is_unaffected_by_the_settled_question():
+    """The decimal clause the CHS question turned on is one of two rounding
+    rules; the whole-number one was never in dispute. `250 UB 25.7` against
+    the library's `250UB26` stays `canonical`."""
+    section, how = sections.resolve("250UB25.7")
+    assert (section.section_id, how) == ("250UB26", "canonical")
 
 
 # --- the shape of the record ----------------------------------------------

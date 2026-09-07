@@ -67,13 +67,6 @@ VOCABULARY = [
     "M24 ROD", "200 UB 25 x 6061 LG", "100 x 75 x 6 EA",
 ]
 
-#: Held OUT of the vocabulary upstream, and carried here on purpose.
-#: The two source resolvers genuinely disagree on this one and the parity
-#: gate would go red on every commit for a question no session may settle.
-#: Excluding it from a gate is right; excluding it from a MEASUREMENT hides
-#: the only real difference there is. See `fsg_common.sections._policy`.
-KNOWN_OPEN_QUESTION = ["273 CHS 6.4"]
-
 # --- layer 2: the anchors CLAUDE.md names, and the rule each pins ----------
 ANCHORS = [
     ("200 PFC", "resolves, 22.9 kg/m"),
@@ -130,6 +123,15 @@ ANCHORS = [
     ("C15024", "bare, refuses (cold-formed), 1 archive line"),
     ("Z99999", "a syntactically valid but non-existent depth/BMT -- stays "
               "an honest refusal, never guessed via nearest"),
+    # fsg-tender-review#184 Q25, ANSWERED 7 Sep 2026: `CHS 6.4` is a wall
+    # written one decimal short of the library's 6.35 -- until today the
+    # two source resolvers disagreed on the verdict (canonical vs nearest,
+    # same section and mass). Now converged: both resolvers were held
+    # under `KNOWN_OPEN_QUESTION` in this file until the answer landed;
+    # this replaces that entry.
+    ("273 CHS 6.4", "canonical, not nearest -- the estimating team's answer "
+                    "was to read it as the metric 6.40 wall, matching all "
+                    "94 checkable archive lines"),
 ]
 
 #: Behaviour both source resolvers share that MAY be wrong. Carried in the
@@ -159,7 +161,7 @@ def build(snapshot_path: str) -> list[str]:
     """The merged corpus. Order-stable, duplicates removed."""
     out: list[str] = []
     seen: set[str] = set()
-    for group in (VOCABULARY, KNOWN_OPEN_QUESTION,
+    for group in (VOCABULARY,
                   [a for a, _ in ANCHORS], [g for g, _ in OBSERVED_GAPS],
                   library_sweep(snapshot_path)):
         for raw in group:
