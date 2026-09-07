@@ -23,9 +23,6 @@ working.
   library lacks as a different real one. Read by the resolver; never a
   resolver rule.
 - `load_section_library` -- the one function that opens a workbook.
-- `RoundingPolicy`, `TENDER_REVIEW`, `BLUEBEAM` -- the single behaviour the
-  two source resolvers disagree about, carried rather than settled. See
-  `_policy.py`.
 
 ## Verdicts
 
@@ -48,7 +45,6 @@ needing them, delete these three lines.
 from __future__ import annotations
 
 from . import substitutions
-from ._policy import ALL_POLICIES, BLUEBEAM, TENDER_REVIEW, RoundingPolicy
 from ._resolver import (  # noqa: F401 - see the note below
     _NON_STEEL,
     _SHAPE_MODIFIER,
@@ -97,7 +93,6 @@ from ._snapshot import (
 )
 
 __all__ = [
-    "ALL_POLICIES", "BLUEBEAM", "TENDER_REVIEW", "RoundingPolicy",
     "Section", "SectionLibrary",
     "ambiguous_candidates", "canonical_candidates", "cold_formed", "library",
     "loose_key", "mass_of", "resolve", "shape_modifier",

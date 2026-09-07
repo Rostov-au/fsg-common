@@ -10,11 +10,13 @@ and prints a count:
     B  fsg-tender-review  src/.../resolve.py      at a pinned git ref
     C  fsg-bluebeam-steel-standards  .../sections.py   at a pinned git ref
 
-A is compared against B under the `tender-review` rounding policy and
-against C under the `bluebeam` one, because those are the answers each repo
-has today. B and C are also compared against each other, which is what
-`fsg-tender-review/scripts/check_twin_parity.py` does and is reported here
-so the package's verdict can be read next to the twins' own.
+A is compared against B and against C on the one shared library behaviour --
+the `RoundingPolicy` split that used to make this a policy-per-repo
+comparison (`tender-review` vs `bluebeam`) was answered and deleted 7 Sep
+2026 (fsg-tender-review#184 Q25); both source repos converge on the same
+verdicts now. B and C are also compared against each other, which is what
+`fsg-tender-review/scripts/check_twin_parity.py` used to do and is reported
+here so the package's verdict can be read next to the twins' own.
 
 WHAT IT READS. Both siblings are read out of their git object stores at a
 pinned ref (`git show <ref>:<path>`), never from whatever branch the clone
@@ -253,19 +255,16 @@ def main(argv: list[str] | None = None) -> int:
         from fsg_mto import sections as bb  # noqa: E402
         from fsg_tender_review import resolve as tr  # noqa: E402
 
-        a_tr = probe(common, common.library(common.TENDER_REVIEW), corpus)
-        a_bb = probe(common, common.library(common.BLUEBEAM), corpus)
+        a = probe(common, common.library(), corpus)
         b = probe(tr, tr.library(), corpus)
         c = probe(bb, bb.load_section_library_from_snapshot(
             bb.default_snapshot_path()), corpus)
 
     n = len(corpus)
     bad = 0
-    bad += report("A vs B   fsg_common (tender-review policy) vs "
-                  f"{TR_NAME}", a_tr, b, n)
+    bad += report(f"A vs B   fsg_common vs {TR_NAME}", a, b, n)
     print()
-    bad += report(f"A vs C   fsg_common (bluebeam policy) vs {BB_NAME}",
-                  a_bb, c, n)
+    bad += report(f"A vs C   fsg_common vs {BB_NAME}", a, c, n)
     print()
     twins = report(f"B vs C   {TR_NAME} vs {BB_NAME}  (the twins' own gate)",
                    b, c, n)
@@ -277,9 +276,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"VERDICT: PASS -- fsg_common matches both source resolvers on all "
           f"{n} notations")
     if twins:
-        print(f"         The two source resolvers differ from each other on "
-              f"{twins}, which the rounding policy carries deliberately. "
-              f"See src/fsg_common/sections/_policy.py.")
+        print(f"         The two source resolvers still differ from each other on "
+              f"{twins} notation(s) -- unexpected now the rounding-policy split "
+              f"is deleted; worth checking why rather than assuming it's benign.")
     return 0
 
 

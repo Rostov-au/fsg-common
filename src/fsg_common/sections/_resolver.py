@@ -19,19 +19,26 @@ resolving to `1SHS5`; `ALUMINIUM 100 x 50 x 3 RHS` priced as steel (2.9x
 over). A reimplementation would rediscover those one at a time, on real
 tenders.
 
-## The one thing the two twins did not agree on
+## The one thing the two twins did not agree on -- ANSWERED 7 Sep 2026
 
 They agreed on 834 of 835 notations when measured on 3 Sep 2026
-(`tools/parity_report.py`). The exception is a CHS wall written one decimal
+(`tools/parity_report.py`). The exception was a CHS wall written one decimal
 short -- `273 CHS 6.4` against the library's `273CHS6.35` -- which
-tender-review calls `canonical` and the Bluebeam toolkit calls `nearest`.
-Same section, same mass, different verdict, so it changes whether an
-estimator is asked to look.
+tender-review called `canonical` and the Bluebeam toolkit called `nearest`.
+Same section, same mass, different verdict, so it changed whether an
+estimator was asked to look.
 
-That is an open question for FSG's estimators, not a defect
-(Rostov-au/fsg-tender-review#184 item 1), and this package does not settle
-it. `_policy.RoundingPolicy` carries it, so each consumer keeps the answer
-it has today. Delete the policy when the question is answered.
+That was an open question for FSG's estimators
+(Rostov-au/fsg-tender-review#184 item 1, "questions-for-estimators.md" Q25),
+carried rather than settled by a `RoundingPolicy` each consumer could pick.
+David, relaying the estimating team's answer, 7 Sep 2026: read `CHS 6.4` as
+the metric 6.40 wall -- matches all 94 checkable archive lines, 0 closer to
+the imperial 6.35 the library actually stores. Both resolvers now converge
+on `canonical`, the tender-review reading; the policy split is gone and
+`_is_rounding` applies the one-decimal clause unconditionally. (The
+question's wider half -- whether `90_Lists` should carry a metric CHS range
+of its own, rather than matching the imperial wall by name -- is still
+undecided and is not what this settles.)
 
 ## Report how, always
 
@@ -56,13 +63,10 @@ import re
 from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
-from ._policy import BLUEBEAM, TENDER_REVIEW, RoundingPolicy
-
 if TYPE_CHECKING:
     from ._section import Section
 
 __all__ = [
-    "BLUEBEAM", "TENDER_REVIEW", "RoundingPolicy",
     "SectionLibrary", "ambiguous_candidates", "canonical_candidates",
     "cold_formed", "library", "loose_key", "mass_of", "resolve",
     "shape_modifier", "shape_modifier_candidates", "vendor_cold_formed",
@@ -179,16 +183,26 @@ _TWO_NUMBER_TYPES = {"UB", "UC", "WB", "WC", "TFC", "TFB", "BT", "CT", "FL"}
 # Cold-formed C/Z purlin designations, as Stramit and Lysaght write them and as
 # real FSG drawings and take-offs use them: Z20015 = Z200 at 1.5 mm BMT,
 # C25024 = C250 at 2.4 mm. 90_Lists carries these only vendor-prefixed
-# (`LYS-Z20024`, resolved `exact`) -- corrected 6 Sep 2026, tr#280; it does
-# NOT carry a bare row for any of them (see the alias block in `resolve()`
-# below for why one must never be added), and today (7 Sep 2026) it carries
-# no `STR-` rows at all -- Lysaght is the only maker actually priced. A
-# `STR-` notation still resolves where a `LYS-` row exists at the same
+# (`LYS-Z20024`, resolved `exact`); a BARE code (no vendor prefix) does not
+# resolve, even though a same-shaped Lysaght row exists under a prefixed id.
+#
+# tr#280 (6 Sep 2026) tried aliasing a bare code to its Lysaght row, labelled
+# as an assumed manufacturer. REVERTED 7 Sep 2026 (fsg-tender-review#184,
+# question 2 / "questions-for-estimators.md" Q26): David, relaying the
+# estimating team's answer -- a bare code must NOT be assumed Lysaght; leave
+# it unresolved. The alias block this comment used to point to is gone; a
+# bare code now falls straight through to the `cold-formed` refusal below,
+# same as a vendor-prefixed code the library doesn't carry.
+#
+# A VENDOR-prefixed code is different: 90_Lists carries no `STR-` rows at
+# all today (Lysaght is the only maker actually priced), but a `STR-`
+# notation still resolves where a `LYS-` row exists at the same
 # shape/depth/BMT (fsg-tender-review#184 Q27, `cold-formed-vendor-
-# equivalent` below); one with no equivalent either way is genuinely
-# uncosted, which is still worth recognising -- it separates "this is a
-# purlin the library doesn't carry" from "this is unreadable text", very
-# different problems for an estimator.
+# equivalent` below) -- the manufacturer IS what the drawing wrote there,
+# unlike the bare case just reverted. One with no equivalent either way is
+# genuinely uncosted, which is still worth recognising -- it separates
+# "this is a purlin the library doesn't carry" from "this is unreadable
+# text", very different problems for an estimator.
 COLD_FORMED = re.compile(r"^([CZ])(\d{3})(\d{2})$")
 
 # A vendor-prefixed cold-formed code, as the archive actually writes one when
@@ -714,8 +728,19 @@ def _split_id(section_id: str) -> tuple[str, str, float] | None:
     return m.group("head"), m.group("type"), float(m.group("tail"))
 
 
-def _is_rounding(candidate: str, section: Section,
-                 policy: RoundingPolicy = TENDER_REVIEW) -> bool:
+# How far a drawing's number may sit from the library's rounded whole-kg/m
+# figure and still count as the same section, standard-written rather than
+# near-missed. Derived from 85 of 85 `nearest` outcomes in the 28 Aug 2026
+# Tier A run, all within 1% on mass -- fsg-tender-review's historical value.
+# Fsg-bluebeam-steel-standards had no one-decimal clause at all (whole-number
+# rounding only), which is what made `273 CHS 6.4` read `canonical` in one
+# repo and `nearest` in the other. ANSWERED 7 Sep 2026
+# (Rostov-au/fsg-tender-review#184 Q25): both resolvers converge on this
+# clause applying -- see the module docstring's "ANSWERED 7 Sep 2026" section.
+ROUNDING_TOLERANCE = 0.051
+
+
+def _is_rounding(candidate: str, section: Section) -> bool:
     """True when the library ID is simply the drawing's number, rounded.
 
     `90_Lists` stores AS/NZS masses rounded to whole kg/m -- 250UB25.7 is
@@ -737,16 +762,8 @@ def _is_rounding(candidate: str, section: Section,
         return True
     # The same rule one decimal down: the library files a CHS wall as
     # 7.11 / 6.35 / 8.18 (the standard's figure) and every detailer writes
-    # 7.1 / 6.4 / 8.2. 85 of 85 `nearest` outcomes in the 28 Aug 2026 Tier A
-    # run were this, all within 1% on mass -- a rounding, not a near-miss.
-    #
-    # WHETHER THIS CLAUSE APPLIES IS THE ONE THING THE TWO SOURCE RESOLVERS
-    # DISAGREE ABOUT, and it is an open question for FSG's estimators
-    # (Rostov-au/fsg-tender-review#184 item 1), not a defect to fix here.
-    # `policy` carries it so each consumer keeps the answer it has today.
-    if policy.decimal_tolerance is None:
-        return False
-    return abs(left[2] - right[2]) <= policy.decimal_tolerance
+    # 7.1 / 6.4 / 8.2 -- a rounding, not a near-miss.
+    return abs(left[2] - right[2]) <= ROUNDING_TOLERANCE
 
 
 class SectionLibrary:
@@ -754,9 +771,7 @@ class SectionLibrary:
     here, duck-typed against the same six fields `fsg_mto.sections.Section`
     has, so nothing above this class needed to change on the port."""
 
-    def __init__(self, sections: Iterable[Section], *,
-                 rounding: RoundingPolicy = TENDER_REVIEW) -> None:
-        self.rounding = rounding
+    def __init__(self, sections: Iterable[Section]) -> None:
         self.sections: list[Section] = list(sections)
         self._by_key: dict[str, Section] = {}
         self._by_family: dict[tuple[str, str], list[tuple[float, Section]]] = {}
@@ -839,22 +854,15 @@ class SectionLibrary:
           the OTHER vendor's row at the same shape/depth/BMT -- David's
           answer to fsg-tender-review#184 Q27, 7 Sep 2026: Stramit and
           Lysaght purlins are a genuine standard-product fact at matching
-          depth/BMT, not merely close on mass. Unlike the bare alias below,
-          the manufacturer IS what the drawing wrote; only the specific row
-          moved. Exact alias only, refusing to ``cold-formed`` on a miss
-        - ``cold-formed-lysaght-assumed``  a BARE C/Z purlin code (no vendor
-          prefix) aliased to its Lysaght row -- David's decision, 5 Sep 2026
-          (tr#280): the only maker currently in the library, so a bare code
-          is assumed to mean that one, but the manufacturer is an
-          ASSUMPTION the drawing did not state and callers must surface it
-          as one, not as a fact. Exact alias only, refusing to
-          ``cold-formed`` on a miss -- never `nearest` (see `resolve()`'s
-          own comment at the alias check for the measured reason: a bare
-          library row would let genuinely different BMTs match each other
-          as `nearest`, a 62% mass error reported as a plausible verdict)
+          depth/BMT, not merely close on mass. The manufacturer IS what the
+          drawing wrote; only the specific row moved. Exact alias only,
+          refusing to ``cold-formed`` on a miss
         - ``cold-formed``    a readable C/Z purlin code, bare or vendor-
-          prefixed, that 90_Lists does not carry even under the assumed
-          manufacturer -- a library gap, not a bad read
+          prefixed, that 90_Lists does not carry under the id as written --
+          a library gap, not a bad read. A bare code is never assumed to
+          mean any one vendor (tr#280 tried that 6 Sep 2026 and it was
+          reverted 7 Sep 2026, fsg-tender-review#184 Q26: the estimating
+          team's answer was not to guess)
         - ``material-mismatch``  aluminium/stainless/timber/etc. -- refuses
           rather than pricing it as steel
         - ``shape-modifier`` the notation names a cross-section 90_Lists has
@@ -897,7 +905,7 @@ class SectionLibrary:
             hit = self.nearest(candidate)
             if hit is not None:
                 return hit, ("canonical"
-                             if _is_rounding(candidate, hit, self.rounding)
+                             if _is_rounding(candidate, hit)
                              else "nearest")
         # fsg-tender-review#184 Q27, ANSWERED 7 Sep 2026: a VENDOR-PREFIXED
         # cold-formed code (`STR-C20024`, `LYS-Z20015`) whose own exact row
@@ -905,25 +913,25 @@ class SectionLibrary:
         # shape/depth/BMT before refusing. David, correcting his own first
         # answer: "The lysart and stramit are interchangeable. Purlin
         # sections are standard and can come from either." Unlike the bare
-        # alias just below (an ASSUMPTION about a notation naming no
-        # manufacturer at all, which Q26 answered must NOT be guessed), this
+        # alias tr#280 tried and Q26 had reverted the same day (an
+        # ASSUMPTION about a notation naming no manufacturer at all), this
         # is a labelled cross-vendor match the estimating team confirmed is
         # a genuine standard-product fact, not a resolver guess -- 90_Lists
         # carries no `STR-` rows at all today (Lysaght is the only maker
         # priced), so every `STR-` notation refused `cold-formed` before
         # this even where the identical product resolves under `LYS-`.
         #
-        # EXACT lookup only, raw text only, same discipline as the bare
-        # alias: never through `canonical_candidates()`/`nearest()` (a bare
-        # library row for one vendor would let `nearest` match two genuinely
-        # different BMTs against each other, the exact danger the bare
-        # alias's own comment measures), and never a schedule-mark-stripped
-        # candidate (unmeasured for this notation; the bare alias narrowed
-        # to raw-only after finding candidate-stripping conflated a
-        # genuinely different vendor's own prefix with no prefix at all --
-        # the same risk applies here in reverse and there is no archive
-        # count yet showing a vendor-prefixed code ever appears schedule-
-        # marked).
+        # EXACT lookup only, raw text only, same discipline the bare alias
+        # established: never through `canonical_candidates()`/`nearest()` (a
+        # bare library row for one vendor would let `nearest` match two
+        # genuinely different BMTs against each other -- the exact danger
+        # that alias's own comment measured before it was reverted), and
+        # never a schedule-mark-stripped candidate (unmeasured for this
+        # notation; the bare alias narrowed to raw-only after finding
+        # candidate-stripping conflated a genuinely different vendor's own
+        # prefix with no prefix at all -- the same risk applies here in
+        # reverse and there is no archive count yet showing a
+        # vendor-prefixed code ever appears schedule-marked).
         vf = vendor_cold_formed(raw)
         if vf is not None:
             written_vendor, shape, depth, bmt = vf
@@ -934,50 +942,17 @@ class SectionLibrary:
                 hit = self.get(alt_id)
                 if hit is not None:
                     return hit, "cold-formed-vendor-equivalent"
-        # tr#280, David's decision 5 Sep 2026: alias a BARE cold-formed code
-        # (no vendor prefix AT ALL, not even one that candidate-generation
-        # would strip) to its Lysaght row, labelled as an assumed
-        # manufacturer, refusing on a miss.
-        #
-        # Deliberately `cold_formed(raw)` ONLY, not the broader
-        # `any(cold_formed(candidate) for candidate in candidates)` the
-        # classification check below still uses. Found by hand, from the
-        # EXISTING regression suite, not by reasoning about it:
-        # `canonical_candidates("STR-C20024")` returns `["C20024"]` --
-        # stripping the STR- prefix as candidate-generation noise, the same
-        # mechanism that recovers 'Z20015' from the schedule mark in
-        # 'P7 Z20015'. Checking candidates for the ALIAS (not just the
-        # generic cold-formed classification) would have aliased a genuinely
-        # Stramit-branded code to Lysaght's mass -- a real, different
-        # manufacturer's own prefix, mistaken for the absence of one. Raw
-        # text only draws the line correctly: a schedule mark is noise
-        # around a bare code; a competing vendor's prefix is not.
-        cf = cold_formed(raw)
-        if cf is not None:
-            # EXACT lookup only, by direct id reconstruction -- never
-            # through `canonical_candidates()` or `nearest()`, and never by
-            # adding a bare row to 90_Lists. Measured (falsifying a test,
-            # not reasoning about it): a bare Z20024 row entered the family
-            # index and let Z20015 -- genuinely 4.357 kg/m -- match
-            # Z20024's 7.065 kg/m as `nearest`, a 62% overstatement reported
-            # as a plausible, human-reviewable verdict. 1.5mm and 2.4mm BMT
-            # purlins are not near-misses of each other the way
-            # 250UB25.7/250UB26 are; `nearest` exists for rounding, not two
-            # genuinely different products sharing a depth.
-            shape, depth, bmt = cf
-            alias_id = f"LYS-{shape}{depth:03d}{round(bmt * 10):02d}"
-            aliased = self.get(alias_id)
-            if aliased is not None:
-                return aliased, "cold-formed-lysaght-assumed"
         # Check the candidates too, not just the raw text: a schedule line
         # reads 'P7 Z20015', and only the demarked form is recognisable as a
-        # purlin -- classification only (a person still needs to know this
-        # is a real, readable cold-formed code), never the alias above.
-        if cf is not None or any(
+        # purlin. A BARE code is never assumed to mean any one vendor --
+        # tr#280 (6 Sep 2026) tried aliasing a bare code to its Lysaght row;
+        # REVERTED 7 Sep 2026 (fsg-tender-review#184 Q26): the estimating
+        # team's answer was to leave it unresolved rather than guess a
+        # manufacturer the drawing never stated.
+        if cold_formed(raw) is not None or any(
             cold_formed(candidate) is not None for candidate in candidates
         ):
-            # Real, readable, and genuinely absent from 90_Lists even under
-            # the assumed manufacturer (or not bare enough to assume one).
+            # Real, readable, and genuinely absent from 90_Lists.
             return None, "cold-formed"
         # tr#359, 6 Sep 2026: a bare equal-angle triple, EXACT lookup only --
         # same shape and same reason as the Lysaght alias above. This must
@@ -1008,8 +983,8 @@ class SectionLibrary:
         return None, "unresolved"
 
 
-@functools.lru_cache(maxsize=4)
-def library(rounding: RoundingPolicy = TENDER_REVIEW) -> SectionLibrary:
+@functools.lru_cache(maxsize=1)
+def library() -> SectionLibrary:
     """FSG's section library, from this repo's own duplicated snapshot.
 
     No live workbook, unlike the module this was vendored from -- this repo
@@ -1038,23 +1013,17 @@ def library(rounding: RoundingPolicy = TENDER_REVIEW) -> SectionLibrary:
     """
     from ._snapshot import sections as _sections
 
-    return SectionLibrary(_sections().values(), rounding=rounding)
+    return SectionLibrary(_sections().values())
 
 
-def resolve(raw: str,
-            rounding: RoundingPolicy = TENDER_REVIEW) -> tuple[Section | None, str]:
+def resolve(raw: str) -> tuple[Section | None, str]:
     """Convenience wrapper: `sections.resolve("125 x 125 x 9 SHS")` without a
     caller needing to hold onto a `SectionLibrary` itself.
-
-    `rounding` defaults to TENDER_REVIEW. That default is a choice, not a
-    neutral position -- see `_policy.py`. A caller that needs the Bluebeam
-    toolkit's historical answer passes `rounding=BLUEBEAM` explicitly.
     """
-    return library(rounding).resolve(raw)
+    return library().resolve(raw)
 
 
-def ambiguous_candidates(raw: str,
-                         rounding: RoundingPolicy = TENDER_REVIEW) -> list[Section]:
+def ambiguous_candidates(raw: str) -> list[Section]:
     """When `resolve()` comes back `unresolved` for a bare depth with no size
     given (`250UB`, not `250UB37`) and the library carries more than one
     section at that depth, the sections it could have meant.
@@ -1094,7 +1063,7 @@ def ambiguous_candidates(raw: str,
         # filed `100SHS5` in the library -- resolve() already collapses the
         # equal pair for `100x100x5 SHS`, so candidate naming must too.
         heads.append(nums[0])
-    lib = library(rounding)
+    lib = library()
     for head in heads:
         family = lib._family(head, kind)
         # One candidate counts. `100TFB` had exactly one section at that depth
@@ -1118,8 +1087,7 @@ def ambiguous_candidates(raw: str,
 _M_DESIGNATION = re.compile(r"(?<![A-Z])M(\d+(?:\.\d+)?)")
 
 
-def shape_modifier_candidates(
-        raw: str, rounding: RoundingPolicy = TENDER_REVIEW) -> list[Section]:
+def shape_modifier_candidates(raw: str) -> list[Section]:
     """For a notation refused as `shape-modifier`, the plain-shape section the
     library *does* hold at that size -- never the answer, always the anchor.
 
@@ -1152,7 +1120,7 @@ def shape_modifier_candidates(
     plain = _SHAPE_MODIFIER.sub(" ", plain)
     if not _NUM.search(plain):
         return []
-    section, how = library(rounding).resolve(plain)
+    section, how = library().resolve(plain)
     if section is None or how in ("nearest", "unresolved"):
         # `nearest` is already "needs an estimator's eye" for a notation the
         # library does carry; offering it as the anchor for one it does not
@@ -1161,8 +1129,7 @@ def shape_modifier_candidates(
     return [section]
 
 
-def mass_of(section_id: str,
-            rounding: RoundingPolicy = TENDER_REVIEW) -> float | None:
+def mass_of(section_id: str) -> float | None:
     """Kilograms per metre for a section written any way at all, or None.
 
     Thin compatibility wrapper over `resolve()`, for callers that only need a
@@ -1177,5 +1144,5 @@ def mass_of(section_id: str,
     # A caller that needs the `how` calls resolve() directly -- which is what
     # scope_growth.nc1_leg() now does rather than coming through here.
     # evidence-ok: this wrapper's documented contract is a mass and nothing else.
-    section, _how = resolve(section_id, rounding)
+    section, _how = resolve(section_id)
     return section.mass_kg_per_m if section else None

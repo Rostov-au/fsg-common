@@ -121,62 +121,39 @@ def test_fsg_ids_round_the_mass_so_matching_is_on_mass_not_digits():
     assert how == "canonical"
 
 
-# --- bare cold-formed codes, aliased to Lysaght (tr#280, 5 Sep 2026) ------
+# --- bare cold-formed codes, NOT aliased to any vendor (tr#280 tried it 5
+# Sep 2026; reverted 7 Sep 2026, fsg-tender-review#184 Q26) ----------------
 
-def test_a_bare_cold_formed_code_aliases_to_its_real_lysaght_row():
-    """David's decision: alias, labelled as an assumed manufacturer."""
-    for bare, expected_id, expected_mass in (
-        ("Z20024", "LYS-Z20024", 7.065), ("C15019", "LYS-C15019", 4.4),
-        ("Z20015", "LYS-Z20015", 4.357), ("Z15019", "LYS-Z15019", 4.4),
-        ("C10015", "LYS-C10015", 2.532), ("C20024", "LYS-C20024", 7.064),
-        ("C15015", "LYS-C15015", 3.474), ("C15012", "LYS-C15012", 2.779),
-        ("C15024", "LYS-C15024", 5.557),
-    ):
+def test_a_bare_cold_formed_code_refuses_rather_than_assumes_a_vendor():
+    """tr#280 aliased these to their Lysaght row for one day. David, relaying
+    the estimating team's answer to Q26: do not assume Lysaght -- leave a
+    bare code unresolved. Same 9 real archive pairs #7 anchored on, now
+    checked the other way."""
+    for bare in ("Z20024", "C15019", "Z20015", "Z15019", "C10015",
+                 "C20024", "C15015", "C15012", "C15024"):
         section, how = sections.resolve(bare)
-        assert section is not None, bare
-        assert section.section_id == expected_id, bare
-        assert section.mass_kg_per_m == expected_mass, bare
-        assert how == "cold-formed-lysaght-assumed", bare
+        assert section is None, bare
+        assert how == "cold-formed", bare
 
 
-def test_the_alias_never_confuses_two_real_bmts():
-    """The exact danger the issue measured: a bare LIBRARY ROW (not this
-    exact-alias) let Z20015 match Z20024 as `nearest`, a 62% overstatement.
-    Both are real, distinct, aliased sections here -- neither may borrow the
-    other's mass."""
-    z15, how15 = sections.resolve("Z20015")
-    z24, how24 = sections.resolve("Z20024")
-    assert (z15.section_id, z15.mass_kg_per_m, how15) == (
-        "LYS-Z20015", 4.357, "cold-formed-lysaght-assumed")
-    assert (z24.section_id, z24.mass_kg_per_m, how24) == (
-        "LYS-Z20024", 7.065, "cold-formed-lysaght-assumed")
+def test_a_vendor_prefixed_cold_formed_code_still_resolves_exact():
+    """The revert is scoped to the BARE code only -- a drawing that already
+    states the vendor still finds its row, unchanged by tr#280 or its
+    reversal."""
+    section, how = sections.resolve("LYS-Z20024")
+    assert section is not None
+    assert section.section_id == "LYS-Z20024"
+    assert section.mass_kg_per_m == 7.065
+    assert how == "exact"
 
 
-def test_a_bare_code_with_no_matching_lysaght_row_still_refuses_honestly():
-    """A syntactically valid but non-existent depth/BMT must stay the
-    honest `cold-formed` miss -- never guessed via `nearest`, and never
-    aliased to the nearest real depth."""
+def test_a_bare_code_with_no_matching_vendor_row_also_refuses():
+    """A syntactically valid but non-existent depth/BMT stays the same
+    honest `cold-formed` miss whether or not a same-shaped vendor row
+    happens to exist elsewhere in the library."""
     section, how = sections.resolve("Z99999")
     assert section is None
     assert how == "cold-formed"
-
-
-def test_the_alias_is_exact_never_through_nearest_or_a_library_row():
-    """Falsifies the mechanism, not just the answer: a bare code must never
-    reach the library through `canonical_candidates()`/`nearest()`, and no
-    bare-code library row must exist for `nearest` to ever find."""
-    from fsg_common.sections import canonical_candidates
-    # No candidate spelling of a bare code is itself library-resolvable --
-    # if one were, `nearest()` could reach it independently of this alias.
-    for bare in ("Z20024", "Z20015", "C15019"):
-        for candidate in canonical_candidates(bare):
-            assert sections.library().get(candidate) is None, (bare, candidate)
-    # No bare-code row exists in the packaged library at all -- if one did,
-    # it would enter the `nearest` family index and reopen exactly the
-    # cross-BMT matching this alias exists to avoid.
-    lib = sections.library()
-    for section_id in ("Z20024", "Z20015", "C15019", "C20024"):
-        assert lib.get(section_id) is None, section_id
 
 
 # --- STR-/LYS- cross-vendor aliasing (fsg-tender-review#184 Q27, ANSWERED
@@ -346,7 +323,7 @@ def test_every_anchor_resolves_without_raising(raw, rule):
     """The rule text is in the id so a failure names the rule it broke."""
     section, how = sections.resolve(raw)
     assert how in ("exact", "canonical", "nearest", "cold-formed",
-                   "cold-formed-lysaght-assumed", "cold-formed-vendor-equivalent",
+                   "cold-formed-vendor-equivalent",
                    "material-mismatch", "shape-modifier", "substitution",
                    "unresolved"), f"{raw}: {rule}"
     if section is not None:

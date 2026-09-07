@@ -67,13 +67,6 @@ VOCABULARY = [
     "M24 ROD", "200 UB 25 x 6061 LG", "100 x 75 x 6 EA",
 ]
 
-#: Held OUT of the vocabulary upstream, and carried here on purpose.
-#: The two source resolvers genuinely disagree on this one and the parity
-#: gate would go red on every commit for a question no session may settle.
-#: Excluding it from a gate is right; excluding it from a MEASUREMENT hides
-#: the only real difference there is. See `fsg_common.sections._policy`.
-KNOWN_OPEN_QUESTION = ["273 CHS 6.4"]
-
 # --- layer 2: the anchors CLAUDE.md names, and the rule each pins ----------
 ANCHORS = [
     ("200 PFC", "resolves, 22.9 kg/m"),
@@ -108,23 +101,37 @@ ANCHORS = [
     ("L90x6H", "tr#359, 6 Sep 2026: trailing H orientation suffix "
               "(Horizontal, a transmission-tower convention) -> 90EA6, "
               "same as L90x6"),
-    # tr#280, David's decision 5 Sep 2026: a bare cold-formed code aliases to
-    # its Lysaght row, labelled as an assumed manufacturer. All 9 of the
-    # archive's most common bare-vs-prefixed pairs (library-gap-ranked.md,
-    # 499 lines), added 6 Sep 2026.
-    ("Z20024", "bare, aliases to LYS-Z20024, 199 archive lines"),
-    ("C15019", "bare, aliases to LYS-C15019, 104 archive lines"),
-    ("Z20015", "bare, aliases to LYS-Z20015 (4.357 kg/m) -- NOT Z20024's "
-              "7.065; this is the exact pair a bare library row would have "
-              "let `nearest` confuse, 62% over"),
-    ("Z15019", "bare, aliases to LYS-Z15019, 48 archive lines"),
-    ("C10015", "bare, aliases to LYS-C10015, 30 archive lines"),
-    ("C20024", "bare, aliases to LYS-C20024, 28 archive lines"),
-    ("C15015", "bare, aliases to LYS-C15015, 5 archive lines"),
-    ("C15012", "bare, aliases to LYS-C15012, 5 archive lines"),
-    ("C15024", "bare, aliases to LYS-C15024, 1 archive line"),
-    ("Z99999", "a syntactically valid but non-existent depth/BMT -- the "
-              "alias must miss and refuse, never guess via nearest"),
+    # tr#280 (5-6 Sep 2026) tried aliasing a bare cold-formed code to its
+    # Lysaght row, labelled as an assumed manufacturer. REVERTED 7 Sep 2026
+    # (fsg-tender-review#184 Q26): David, relaying the estimating team's
+    # answer -- do not assume Lysaght, leave a bare code unresolved. Kept
+    # as anchors on the refusal instead of removed: these are the archive's
+    # 9 most common bare-vs-prefixed pairs (library-gap-ranked.md, 499
+    # lines), and each still exercises the same `cold_formed()` grammar
+    # branch, now returning `cold-formed` rather than an alias.
+    ("Z20024", "bare, refuses (cold-formed), 199 archive lines"),
+    ("C15019", "bare, refuses (cold-formed), 104 archive lines"),
+    ("Z20015", "bare, refuses (cold-formed) -- NOT aliased to Z20024's "
+              "7.065 kg/m; this is the exact pair a bare library row would "
+              "have let `nearest` confuse, 62% over, which is why the "
+              "revert stays a refusal rather than a library row"),
+    ("Z15019", "bare, refuses (cold-formed), 48 archive lines"),
+    ("C10015", "bare, refuses (cold-formed), 30 archive lines"),
+    ("C20024", "bare, refuses (cold-formed), 28 archive lines"),
+    ("C15015", "bare, refuses (cold-formed), 5 archive lines"),
+    ("C15012", "bare, refuses (cold-formed), 5 archive lines"),
+    ("C15024", "bare, refuses (cold-formed), 1 archive line"),
+    ("Z99999", "a syntactically valid but non-existent depth/BMT -- stays "
+              "an honest refusal, never guessed via nearest"),
+    # fsg-tender-review#184 Q25, ANSWERED 7 Sep 2026: `CHS 6.4` is a wall
+    # written one decimal short of the library's 6.35 -- until today the
+    # two source resolvers disagreed on the verdict (canonical vs nearest,
+    # same section and mass). Now converged: both resolvers were held
+    # under `KNOWN_OPEN_QUESTION` in this file until the answer landed;
+    # this replaces that entry.
+    ("273 CHS 6.4", "canonical, not nearest -- the estimating team's answer "
+                    "was to read it as the metric 6.40 wall, matching all "
+                    "94 checkable archive lines"),
     # fsg-tender-review#184 Q27, ANSWERED 7 Sep 2026: STR-/LYS- cold-formed
     # purlins at matching shape/depth/BMT are a genuine standard-product
     # fact, so a vendor-prefixed code whose own row is missing aliases to
@@ -176,7 +183,7 @@ def build(snapshot_path: str) -> list[str]:
     """The merged corpus. Order-stable, duplicates removed."""
     out: list[str] = []
     seen: set[str] = set()
-    for group in (VOCABULARY, KNOWN_OPEN_QUESTION,
+    for group in (VOCABULARY,
                   [a for a, _ in ANCHORS], [g for g, _ in OBSERVED_GAPS],
                   library_sweep(snapshot_path)):
         for raw in group:
