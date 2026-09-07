@@ -40,7 +40,6 @@ import functools
 import json
 import os
 
-from ._policy import TENDER_REVIEW, RoundingPolicy
 from ._section import Section
 
 # --- the live workbook -----------------------------------------------------
@@ -159,15 +158,13 @@ def check_provenance(path: str | None = None) -> str | None:
     return staleness_warning(path)
 
 
-def load_section_library_from_snapshot(json_path: str,
-                                       rounding: RoundingPolicy = TENDER_REVIEW):
+def load_section_library_from_snapshot(json_path: str):
     """A `SectionLibrary` over the snapshot at `json_path`."""
     from ._resolver import SectionLibrary
-    return SectionLibrary(sections(json_path).values(), rounding=rounding)
+    return SectionLibrary(sections(json_path).values())
 
 
-def load_section_library(workbook_path: str,
-                         rounding: RoundingPolicy = TENDER_REVIEW):
+def load_section_library(workbook_path: str):
     """Read `90_Lists` from a copy of the estimating workbook, read-only.
 
     The one path here that opens a workbook. `data_only=True` is not
@@ -197,4 +194,4 @@ def load_section_library(workbook_path: str,
             ))
     finally:
         wb.close()
-    return SectionLibrary(rows, rounding=rounding)
+    return SectionLibrary(rows)
