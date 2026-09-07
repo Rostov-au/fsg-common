@@ -53,6 +53,7 @@ from ._resolver import (  # noqa: F401 - see the note below
     _NON_STEEL,
     _SHAPE_MODIFIER,
     COLD_FORMED,
+    COLD_FORMED_VENDORS,
     HEAD_TOLERANCE,
     NEAREST_MARGIN,
     NEAREST_TOLERANCE,
@@ -67,6 +68,7 @@ from ._resolver import (  # noqa: F401 - see the note below
     resolve,
     shape_modifier,
     shape_modifier_candidates,
+    vendor_cold_formed,
 )
 from ._section import Section
 from ._snapshot import (
@@ -99,8 +101,9 @@ __all__ = [
     "Section", "SectionLibrary",
     "ambiguous_candidates", "canonical_candidates", "cold_formed", "library",
     "loose_key", "mass_of", "resolve", "shape_modifier",
-    "shape_modifier_candidates", "substitutions",
-    "COLD_FORMED", "HEAD_TOLERANCE", "NEAREST_MARGIN", "NEAREST_TOLERANCE",
+    "shape_modifier_candidates", "substitutions", "vendor_cold_formed",
+    "COLD_FORMED", "COLD_FORMED_VENDORS", "HEAD_TOLERANCE", "NEAREST_MARGIN",
+    "NEAREST_TOLERANCE",
     "SHEET", "FIRST_ROW", "LAST_ROW", "COL_SECTION_ID", "COL_CATEGORY",
     "COL_BUILD_DEFAULT", "COL_MASS_FINAL", "COL_PLATE_THK", "COL_PLATE_KG_M2",
     "STALE_AFTER_DAYS", "SNAPSHOT_STALE_AFTER_DAYS", "PACKAGED_SNAPSHOT",

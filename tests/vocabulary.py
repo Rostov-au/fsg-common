@@ -125,6 +125,28 @@ ANCHORS = [
     ("C15024", "bare, aliases to LYS-C15024, 1 archive line"),
     ("Z99999", "a syntactically valid but non-existent depth/BMT -- the "
               "alias must miss and refuse, never guess via nearest"),
+    # fsg-tender-review#184 Q27, ANSWERED 7 Sep 2026: STR-/LYS- cold-formed
+    # purlins at matching shape/depth/BMT are a genuine standard-product
+    # fact, so a vendor-prefixed code whose own row is missing aliases to
+    # the other vendor's row. Real pairs measured in docs/purlin-residue.md
+    # (fsg-tender-review, 4 Sep 2026); 90_Lists carries no `STR-` rows at
+    # all today, so every one of these previously refused `cold-formed`.
+    ("STR-C20024", "aliases to LYS-C20024, 7.064 kg/m -- masses agree to "
+                   "0.34% (STR-C20024 measures 7.088 in the archive) but "
+                   "the LIBRARY's mass is what's returned, never the "
+                   "archive figure"),
+    ("STR-C10015", "aliases to LYS-C10015, 2.532 kg/m"),
+    ("STR-C20019", "aliases to LYS-C20019, 5.593 kg/m"),
+    ("STR-Z20019", "aliases to LYS-Z20019, 5.593 kg/m -- same mass as the "
+                   "C-shape at this depth/BMT but a different row, must "
+                   "not cross shape as well as vendor"),
+    ("LYS-C20024", "already exact -- the alias only ever fires when the "
+                   "written vendor's OWN row is missing"),
+    ("STR-C30024", "no LYS-C30024 row exists in the packaged library "
+                   "either (archive-only mass, docs/purlin-residue.md) -- "
+                   "stays an honest cold-formed refusal, not a guess"),
+    ("STR-Z99999", "a syntactically valid but non-existent depth/BMT under "
+                   "either vendor -- refuses, never guesses via nearest"),
 ]
 
 #: Behaviour both source resolvers share that MAY be wrong. Carried in the

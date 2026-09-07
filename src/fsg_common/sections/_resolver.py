@@ -65,8 +65,9 @@ __all__ = [
     "BLUEBEAM", "TENDER_REVIEW", "RoundingPolicy",
     "SectionLibrary", "ambiguous_candidates", "canonical_candidates",
     "cold_formed", "library", "loose_key", "mass_of", "resolve",
-    "shape_modifier", "shape_modifier_candidates",
-    "COLD_FORMED", "HEAD_TOLERANCE", "NEAREST_MARGIN", "NEAREST_TOLERANCE",
+    "shape_modifier", "shape_modifier_candidates", "vendor_cold_formed",
+    "COLD_FORMED", "COLD_FORMED_VENDORS", "HEAD_TOLERANCE", "NEAREST_MARGIN",
+    "NEAREST_TOLERANCE",
 ]
 
 _NUM = re.compile(r"\d+(?:\.\d+)?")
@@ -180,11 +181,26 @@ _TWO_NUMBER_TYPES = {"UB", "UC", "WB", "WC", "TFC", "TFB", "BT", "CT", "FL"}
 # C25024 = C250 at 2.4 mm. 90_Lists carries these only vendor-prefixed
 # (`LYS-Z20024`, resolved `exact`) -- corrected 6 Sep 2026, tr#280; it does
 # NOT carry a bare row for any of them (see the alias block in `resolve()`
-# below for why one must never be added). A bare code with no matching
-# vendor row is genuinely uncosted, which is still worth recognising -- it
-# separates "this is a purlin the library doesn't carry" from "this is
-# unreadable text", very different problems for an estimator.
+# below for why one must never be added), and today (7 Sep 2026) it carries
+# no `STR-` rows at all -- Lysaght is the only maker actually priced. A
+# `STR-` notation still resolves where a `LYS-` row exists at the same
+# shape/depth/BMT (fsg-tender-review#184 Q27, `cold-formed-vendor-
+# equivalent` below); one with no equivalent either way is genuinely
+# uncosted, which is still worth recognising -- it separates "this is a
+# purlin the library doesn't carry" from "this is unreadable text", very
+# different problems for an estimator.
 COLD_FORMED = re.compile(r"^([CZ])(\d{3})(\d{2})$")
+
+# A vendor-prefixed cold-formed code, as the archive actually writes one when
+# it names the manufacturer: `STR-C20024`, `LYS-Z20015`. `loose_key` strips
+# the hyphen before this ever runs, so the pattern matches the joined form.
+_VENDOR_COLD_FORMED = re.compile(r"^(STR|LYS)([CZ])(\d{3})(\d{2})$")
+
+#: The two vendors 90_Lists's cold-formed rows ever carry. Genuinely just
+#: these two -- fsg-tender-review#184 Q27 answered Stramit/Lysaght
+#: interchangeable at matching depth/BMT; it did not open the door to any
+#: other maker, and none has shown up in the archive as a purlin prefix.
+COLD_FORMED_VENDORS = ("LYS", "STR")
 
 
 def cold_formed(raw: str) -> tuple[str, int, float] | None:
@@ -194,6 +210,16 @@ def cold_formed(raw: str) -> tuple[str, int, float] | None:
         return None
     shape, depth, bmt = m.groups()
     return shape, int(depth), int(bmt) / 10
+
+
+def vendor_cold_formed(raw: str) -> tuple[str, str, int, float] | None:
+    """'STR-C20024' -> ('STR', 'C', 200, 2.4). None if it is not a
+    vendor-prefixed C/Z purlin code."""
+    m = _VENDOR_COLD_FORMED.match(loose_key(raw))
+    if not m:
+        return None
+    vendor, shape, depth, bmt = m.groups()
+    return vendor, shape, int(depth), int(bmt) / 10
 
 
 # tr#359, fsg-tender-review, 6 Sep 2026: an equal-angle triple with a glued
@@ -808,6 +834,14 @@ class SectionLibrary:
         - ``nearest``        matched to the closest same-depth section (the
           library rounds masses); **needs an estimator's eye**, callers must
           surface it
+        - ``cold-formed-vendor-equivalent``  a VENDOR-PREFIXED C/Z purlin
+          code (`STR-C20024`) whose own row is not in 90_Lists, aliased to
+          the OTHER vendor's row at the same shape/depth/BMT -- David's
+          answer to fsg-tender-review#184 Q27, 7 Sep 2026: Stramit and
+          Lysaght purlins are a genuine standard-product fact at matching
+          depth/BMT, not merely close on mass. Unlike the bare alias below,
+          the manufacturer IS what the drawing wrote; only the specific row
+          moved. Exact alias only, refusing to ``cold-formed`` on a miss
         - ``cold-formed-lysaght-assumed``  a BARE C/Z purlin code (no vendor
           prefix) aliased to its Lysaght row -- David's decision, 5 Sep 2026
           (tr#280): the only maker currently in the library, so a bare code
@@ -865,6 +899,41 @@ class SectionLibrary:
                 return hit, ("canonical"
                              if _is_rounding(candidate, hit, self.rounding)
                              else "nearest")
+        # fsg-tender-review#184 Q27, ANSWERED 7 Sep 2026: a VENDOR-PREFIXED
+        # cold-formed code (`STR-C20024`, `LYS-Z20015`) whose own exact row
+        # is not in 90_Lists tries the OTHER vendor's row at the same
+        # shape/depth/BMT before refusing. David, correcting his own first
+        # answer: "The lysart and stramit are interchangeable. Purlin
+        # sections are standard and can come from either." Unlike the bare
+        # alias just below (an ASSUMPTION about a notation naming no
+        # manufacturer at all, which Q26 answered must NOT be guessed), this
+        # is a labelled cross-vendor match the estimating team confirmed is
+        # a genuine standard-product fact, not a resolver guess -- 90_Lists
+        # carries no `STR-` rows at all today (Lysaght is the only maker
+        # priced), so every `STR-` notation refused `cold-formed` before
+        # this even where the identical product resolves under `LYS-`.
+        #
+        # EXACT lookup only, raw text only, same discipline as the bare
+        # alias: never through `canonical_candidates()`/`nearest()` (a bare
+        # library row for one vendor would let `nearest` match two genuinely
+        # different BMTs against each other, the exact danger the bare
+        # alias's own comment measures), and never a schedule-mark-stripped
+        # candidate (unmeasured for this notation; the bare alias narrowed
+        # to raw-only after finding candidate-stripping conflated a
+        # genuinely different vendor's own prefix with no prefix at all --
+        # the same risk applies here in reverse and there is no archive
+        # count yet showing a vendor-prefixed code ever appears schedule-
+        # marked).
+        vf = vendor_cold_formed(raw)
+        if vf is not None:
+            written_vendor, shape, depth, bmt = vf
+            for vendor in COLD_FORMED_VENDORS:
+                if vendor == written_vendor:
+                    continue
+                alt_id = f"{vendor}-{shape}{depth:03d}{round(bmt * 10):02d}"
+                hit = self.get(alt_id)
+                if hit is not None:
+                    return hit, "cold-formed-vendor-equivalent"
         # tr#280, David's decision 5 Sep 2026: alias a BARE cold-formed code
         # (no vendor prefix AT ALL, not even one that candidate-generation
         # would strip) to its Lysaght row, labelled as an assumed

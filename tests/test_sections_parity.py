@@ -28,8 +28,9 @@ from vocabulary import KNOWN_OPEN_QUESTION, VOCABULARY, build, library_sweep
 from fsg_common import sections
 
 VERDICTS = {"exact", "canonical", "nearest", "cold-formed",
-            "cold-formed-lysaght-assumed", "material-mismatch",
-            "shape-modifier", "substitution", "unresolved"}
+            "cold-formed-lysaght-assumed", "cold-formed-vendor-equivalent",
+            "material-mismatch", "shape-modifier", "substitution",
+            "unresolved"}
 
 
 @pytest.fixture(scope="module")
