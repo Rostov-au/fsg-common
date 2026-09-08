@@ -58,10 +58,22 @@ TR_FILES = {
     "fsg_tender_review/resolve.py": "src/fsg_tender_review/resolve.py",
     "fsg_tender_review/classification.py": "src/fsg_tender_review/classification.py",
     "fsg_tender_review/substitutions.py": "src/fsg_tender_review/substitutions.py",
-    "fsg_tender_review/data/fsg_sections.json":
-        "src/fsg_tender_review/data/fsg_sections.json",
-    "fsg_tender_review/data/substitutions.json":
-        "src/fsg_tender_review/data/substitutions.json",
+    # `data/fsg_sections.json` (7 Sep 2026, fsg-common#6/#12) and
+    # `data/substitutions.json` (7 Sep 2026, tender-review#398) were both
+    # deleted from tender-review deliberately -- the same twin-retirement
+    # this card is about, just for two different files. `resolve.py` and
+    # `substitutions.py` at the current ref read the packaged snapshot this
+    # comparison already forces onto every side via `FSG_SECTIONS_SNAPSHOT`
+    # (set above in `main()`) and re-export `fsg_common.sections.
+    # substitutions` verbatim -- neither file is read by the CURRENT
+    # `resolve.py`/`classification.py`, so there is nothing left here for
+    # `materialise()` to extract, same reasoning `check_twin_parity.py`'s
+    # own retirement already established for the section library
+    # specifically (fsg-tender-review CLAUDE.md, "The old twin-parity gate
+    # is deleted, not replaced"). Removed rather than pointed at a live
+    # `fsg_common` copy -- that would compare a file against itself and
+    # always pass, which is not a comparison, and `substitutions.py`'s own
+    # docstring says why: "One list, one reader."
 }
 BB_FILES = {
     "fsg_mto/__init__.py": "tools/fsg_mto/__init__.py",
