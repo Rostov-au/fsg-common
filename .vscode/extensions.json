@@ -1,0 +1,39 @@
+{
+  // Shared base set for all five FSG repos, harmonised 9 Sep 2026: the same editor
+  // everywhere, plus what this repo alone needs. Keep the base block identical across
+  // repos; add repo-specific entries below it. The kanban extensions are unwanted because
+  // the board was retired for GitHub issues on 4 Sep 2026.
+  "recommendations": [
+    "anthropic.claude-code",
+    "editorconfig.editorconfig",
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.vscode-python-envs",
+    "ms-python.debugpy",
+    "charliermarsh.ruff",
+    "ms-vscode.powershell",
+    "mhutchie.git-graph",
+    "eamodio.gitlens",
+    "github.vscode-pull-request-github",
+    "github.vscode-github-actions",
+    "davidanson.vscode-markdownlint",
+    "yzhang.markdown-all-in-one",
+    "bierner.markdown-mermaid",
+    "redhat.vscode-yaml",
+    "tamasfe.even-better-toml",
+    "mechatroner.rainbow-csv"
+  ],
+  "unwantedRecommendations": [
+    "jeddak.md-kanban",
+    "wguilherme.kanban-md",
+    "donjayamanne.githistory",
+    "saoudrizwan.claude-dev",
+    "ubw.mermaidlens",
+    "continue.continue",
+    "shd101wyy.markdown-preview-enhanced",
+    "doois.smart-mcp-manager",
+    "99xt.gh-code",
+    "ms-vscode-remote.vscode-remote-extensionpack",
+    "norisix.n8n-mcp-vscode"
+  ]
+}
