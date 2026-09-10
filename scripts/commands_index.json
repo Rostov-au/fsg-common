@@ -1,0 +1,36 @@
+{
+  "repo": "fsg-common",
+  "package": null,
+  "groups": [
+    {
+      "id": "check-a-resolver-change",
+      "title": "Check a resolver change before it merges, and see what is still unsettled",
+      "blurb": "Both consumers decide tonnages from this package, so every change runs the parity report before it merges -- it reads each consumer's resolver out of its git object store at a pinned ref, never a working tree, and exit 1 is a disagreement or a comparison it could not establish (neither is a pass). It needs ../fsg-tender-review and ../fsg-bluebeam-steel-standards checked out. The known-issues run reports and never gates: it prints OBSERVED beside EXPECTED so the open estimator questions cannot quietly outlive their subject."
+    },
+    {
+      "id": "regenerate-the-library",
+      "title": "Regenerate the packaged section library from the estimating workbook",
+      "blurb": "The section library and labour rates are a generated snapshot of the workbook's 90_Lists -- never hand-edit data/fsg_sections.json; change the workbook and re-run this. --check re-reads the workbook and compares the content hash, which is the only thing that answers whether the copy still matches; an age threshold cannot. Read-only against the workbook, and a merge here changes nothing downstream until each consumer moves its pin."
+    },
+    {
+      "id": "repo-hygiene",
+      "title": "Find a command, and keep this repo's own index honest",
+      "blurb": "`docs/COMMANDS.md` is generated from the tracked tree, so it cannot quietly fall behind the code. `--check` exits 1 when it has, or when a new command has no task group yet."
+    }
+  ],
+  "assign": {
+    "parity_report.py": "check-a-resolver-change",
+    "known_issues.py": "check-a-resolver-change",
+    "refresh_from_workbook.py": "regenerate-the-library",
+    "gen_commands_index.py": "repo-hygiene"
+  },
+  "aliases": {
+    "did my resolver change break the other two repos": "python tools/parity_report.py",
+    "do bluebeam and tender-review still answer the same": "python tools/parity_report.py",
+    "which resolver questions are still open": "python tools/known_issues.py",
+    "why does 273 CHS 6.4 answer differently in the two repos": "python tools/known_issues.py",
+    "regenerate the section library": "python scripts/refresh_from_workbook.py",
+    "is the packaged section snapshot stale": "python scripts/refresh_from_workbook.py --check",
+    "what commands exist in this repo / I know the task, not the tool's name": "python scripts/gen_commands_index.py"
+  }
+}
