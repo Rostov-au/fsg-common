@@ -42,7 +42,9 @@ through all three implementations, and prints a count. As of 3 Sep 2026:
 | the two source resolvers against each other | 835 | 1 |
 
 The corpus is three layers: the 70-entry twin-parity vocabulary ported from
-`fsg-tender-review/tests/test_resolver_twin_parity.py`, 23 anchors naming the
+`fsg-tender-review/tests/test_resolver_twin_parity.py` (**deleted 5 Sep 2026 with
+the twin-parity gate it served — the vocabulary survives only here and in that
+repo's git history; noted 10 Sep 2026 so a reader does not go looking**), 23 anchors naming the
 rules `fsg-tender-review/CLAUDE.md` states in prose, and every one of the 750
 section ids in the library fed back in as a notation. The third layer is there
 because a corpus only catches what it exercises, and the two hardest defects
