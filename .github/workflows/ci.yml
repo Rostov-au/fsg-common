@@ -47,6 +47,24 @@ jobs:
       - name: ruff check
         run: ruff check .
 
+      - name: docs/COMMANDS.md matches the code (task-to-command index)
+        # Blocking, on David's decision of 10 Sep 2026. The index answers
+        # "I know the task, not the tool's name -- what do I run?", which the
+        # rationale-ordered docs cannot. It is generated, so it can only stay
+        # true if something checks it.
+        #
+        # It catches two failures. The index no longer matches the code, or a
+        # command nobody has filed under a task group in
+        # scripts/commands_index.json. The second is the point: the grouping
+        # cannot be derived, so a new command cannot land until someone says
+        # which task it serves. Filing it is one line.
+        #
+        # Stdlib ast plus git ls-files, nothing installed. --selftest is its
+        # own positive control: it injects a subcommand into a throwaway clone
+        # and reports the exit code, because a check never observed failing is
+        # not a check.
+        run: python scripts/gen_commands_index.py --check
+
   tests:
     # Linux only, deliberately -- dropped the Windows leg 5 Sep 2026 rather
     # than leave it declared and permanently unpickupable. `truenas-win10-vm`

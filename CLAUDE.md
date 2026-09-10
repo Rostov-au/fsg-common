@@ -64,7 +64,7 @@ entry; both consumers read this copy and neither keeps its own.
   the tracked tree, so it cannot silently fall behind the code; the task grouping is a
   human decision in `scripts/commands_index.json` that the script only reads, so a new
   command stays unfiled and `--check` exits 1 until somebody says which task it serves.
-  Never edited by hand. **Not wired into CI or the hook — that decision is open.**
+  Never edited by hand. **`--check` runs BLOCKING in `ci.yml`'s `checks` job** — David's decision, 10 Sep 2026. Not in the pre-commit hook: the hook is a local convenience, and this gate has to answer the same way for everyone, which is why it reads `git ls-files` rather than the working tree.
 
 ## Test and lint
 
