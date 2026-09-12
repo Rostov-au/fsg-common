@@ -395,10 +395,37 @@ def _range_path_sources(rev_range: str) -> dict[str, str]:
     return sources
 
 
-def _read_body(path: str, path_sources: dict[str, str] | None) -> str | None:
-    """The content to scan for *path*: the working tree, or, for a `--range`
-    check, the git blob at the specific commit `_range_path_sources` names
-    for it, if the working-tree read fails.
+def _read_body(
+    path: str, path_sources: dict[str, str] | None
+) -> tuple[str | None, str | None]:
+    """The content to scan for *path* -- the working tree, or, for a
+    `--range` check, the git blob at the specific commit
+    `_range_path_sources` names for it, if the working-tree read fails --
+    paired with a detail string that is non-`None` only when the read
+    failed for a reason worth naming separately from a genuine absence.
+
+    Returns `(content, None)` on a successful read. Returns `(None,
+    None)` when there is nothing to fall back to at all: no
+    `path_sources` (a `--files`/staged check, which has no range), or a
+    path `_range_path_sources` never found ANY commit for -- the path
+    never existed anywhere in the range, which is exactly what "could
+    not be read" already means and the caller's existing wording still
+    fits. Returns `(None, detail)` for a third case that used to be
+    folded into the same `(None, None)` bucket: a commit WAS found (the
+    content provably exists somewhere in this range's history), but the
+    `git show <commit>:<path>` subprocess itself exited non-zero --
+    measured for real, 11-12 Sep 2026 (fsg-estimating-tools#308): a
+    Windows checkout with a long enough absolute path makes `git show`
+    itself fail with `fatal: failed to stat '<rev>:<path>': Filename too
+    long` (exit 128) for a path `_range_path_sources` had just found via
+    `git log`, i.e. the content is real and the failure is the checkout's
+    own path length, not a sign of anything absent or unsafe. `detail`
+    names the command, its exit code and its stderr so a caller can tell
+    that apart from a genuine gap -- one is fixable (a shorter checkout
+    path), the other is not fixable at all, and folding them into one
+    message left an operator debugging content that was never missing
+    (`fsg-estimating-tools`#307's own CI verification run hit exactly
+    this and had to be traced by hand before it could be dismissed).
 
     Reading the working tree assumes it already matches whatever the range's
     file list was computed from -- true in CI (the checked-out commit IS the
@@ -414,13 +441,13 @@ def _read_body(path: str, path_sources: dict[str, str] | None) -> str | None:
     """
     try:
         with open(path, encoding="utf-8", errors="ignore") as fh:
-            return fh.read()
+            return fh.read(), None
     except OSError:
         if not path_sources:
-            return None
+            return None, None
         commit = path_sources.get(path)
         if commit is None:
-            return None
+            return None, None
         # `text=True` would have `subprocess` decode the blob with the
         # PLATFORM'S default encoding (cp1252 on Windows) and raise
         # `UnicodeDecodeError` out of its own reader thread on a genuinely
@@ -433,8 +460,13 @@ def _read_body(path: str, path_sources: dict[str, str] | None) -> str | None:
         out = subprocess.run(["git", "show", f"{commit}:{path}"],
                              capture_output=True, check=False)
         if out.returncode != 0:
-            return None
-        return out.stdout.decode("utf-8", errors="ignore")
+            stderr_text = out.stderr.decode("utf-8", errors="ignore").strip()
+            first_line = (stderr_text.splitlines()[0] if stderr_text
+                          else "(no stderr captured)")
+            detail = (f"`git show {commit}:{path}` exited "
+                      f"{out.returncode}: {first_line}")
+            return None, detail
+        return out.stdout.decode("utf-8", errors="ignore"), None
 
 
 def _allowed(path: str, config: GuardConfig) -> bool:
@@ -495,12 +527,37 @@ def check(paths: list[str], config: GuardConfig,
         if any(rx.search(norm) for rx in config.content_scan_skip):
             continue
 
-        body = _read_body(path, path_sources)
+        body, read_error = _read_body(path, path_sources)
         if body is None:
-            problems.append(
-                f"{norm}: could not be read, so it was NOT scanned "
-                f"(FileNotFoundError) -- this is a gap in the check, "
-                f"not a pass")
+            if read_error:
+                # A commit that touched this path WAS found -- the content
+                # provably exists somewhere in this range's history -- but
+                # `git show` itself failed. Worded distinctly from the
+                # generic gap below on purpose: this is the case measured
+                # in fsg-estimating-tools#308 (a Windows checkout whose
+                # absolute path is long enough that `git show` itself
+                # fails), and it is an ENVIRONMENT failure with a real fix
+                # (a shorter checkout path), not evidence the content is
+                # absent or unsafe. Still a gap -- this file was NOT
+                # scanned either way -- so it still joins `problems` and
+                # still blocks, same as the generic gap; only the wording
+                # changes, so an operator is not sent chasing content that
+                # was never missing.
+                problems.append(
+                    f"{norm}: git could not read this content even though "
+                    f"history says it exists here ({read_error}). This "
+                    f"looks like an ENVIRONMENT failure -- a Windows "
+                    f"checkout path long enough to make `git show` itself "
+                    f"fail is the one measured cause -- not evidence the "
+                    f"content is missing or unsafe. The fix is usually a "
+                    f"shorter checkout path, not a content change. Still "
+                    f"NOT scanned, so this is a gap in the check, not a "
+                    f"pass")
+            else:
+                problems.append(
+                    f"{norm}: could not be read, so it was NOT scanned "
+                    f"(FileNotFoundError) -- this is a gap in the check, "
+                    f"not a pass")
             continue
 
         for rx, why in config.secret_patterns:

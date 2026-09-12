@@ -408,6 +408,106 @@ def test_staged_mode_has_no_fallback_and_a_missing_file_stays_a_gap():
     assert any("could not be read" in p for p in problems), problems
 
 
+def test_a_git_show_environment_failure_is_worded_distinctly_from_a_gap(
+        throwaway_repo, monkeypatch):
+    """fsg-estimating-tools#308, measured for real 11-12 Sep 2026 (PR #307's
+    own CI-verification run, then reproduced deliberately here): a Windows
+    checkout whose absolute path is long enough makes `git show` itself
+    fail -- `fatal: failed to stat '<rev>:<path>': Filename too long`, exit
+    128 -- for a path `_range_path_sources` had JUST found a real commit
+    for. The stderr below is a verbatim copy of a live reproduction (a
+    genuine six-level-deep tracked path under a short repo root, well
+    within `fsg-common`'s own checkout length), not invented text.
+
+    `_range_path_sources` runs for real here and genuinely finds the
+    commit -- the content provably exists in this range's history. Only
+    the final `git show` call is mocked, to the exact failure measured,
+    so this proves `check()`'s WORDING, not the reproduction itself (that
+    part doesn't need re-proving on every CI machine, which may not even
+    be Windows). Before this fix, `_read_body` returned `None` for this
+    case exactly as it does for a path that never existed anywhere in the
+    range -- the two were indistinguishable. This is the falsification
+    that they no longer are.
+    """
+    d = throwaway_repo
+    leak_path = os.path.join(d, "leaky.docx")
+    with open(leak_path, "w", encoding="utf-8") as fh:
+        fh.write("FSG_WORKBOOK_PASSWORD=hunter2\n")
+    _git("add", "leaky.docx", cwd=d)
+    _git("commit", "-q", "-m", "add leaky file", cwd=d)
+    commit1 = subprocess.run(["git", "rev-parse", "HEAD"], cwd=d,
+                             capture_output=True, text=True).stdout.strip()
+    _git("rm", "-q", "leaky.docx", cwd=d)
+    _git("commit", "-q", "-m", "delete leaky file", cwd=d)
+    assert not os.path.exists(leak_path)
+
+    real_run = subprocess.run
+
+    def fake_run(args, **kwargs):
+        if args[:2] == ["git", "show"]:
+            target = args[2]
+            return subprocess.CompletedProcess(
+                args, 128, stdout=b"",
+                stderr=(f"fatal: failed to stat '{target}': "
+                        f"Filename too long\n").encode())
+        return real_run(args, **kwargs)
+
+    old_cwd = os.getcwd()
+    os.chdir(d)
+    try:
+        sources = leak_guard._range_path_sources(
+            "4b825dc642cb6eb9a060e54bf8d69288fbee4904..HEAD")
+        assert sources.get("leaky.docx") == commit1, sources
+        monkeypatch.setattr(leak_guard.subprocess, "run", fake_run)
+        problems = leak_guard.check(["leaky.docx"], CONFIG,
+                                    path_sources=sources)
+    finally:
+        os.chdir(old_cwd)
+
+    assert len(problems) == 1, problems
+    msg = problems[0]
+    # The distinguishing content: the real command, its exit code, its
+    # stderr, and an explicit steer towards the real fix.
+    assert "Filename too long" in msg, msg
+    assert "128" in msg, msg
+    assert "ENVIRONMENT" in msg, msg
+    assert "shorter checkout path" in msg, msg
+    # And NOT the generic gap's wording -- the two must read as different
+    # problems, not the same message with extra words appended.
+    assert "FileNotFoundError" not in msg, msg
+    # Still a gap either way: this file was not scanned, so it still
+    # blocks, exactly as the generic gap already does.
+    assert "not a pass" in msg, msg
+
+
+def test_a_genuine_gap_does_not_pick_up_the_environment_wording(
+        throwaway_repo):
+    """The control in the other direction: a path with NO commit source at
+    all (never touched anywhere in the range) must keep the ORIGINAL
+    generic wording, not the new environment-failure one -- the two stay
+    distinguishable both ways, not just when an environment failure is
+    forced."""
+    d = throwaway_repo
+    with open(os.path.join(d, "ok.txt"), "w", encoding="utf-8") as fh:
+        fh.write("nothing interesting\n")
+    _git("add", "ok.txt", cwd=d)
+    _git("commit", "-q", "-m", "init", cwd=d)
+
+    old_cwd = os.getcwd()
+    os.chdir(d)
+    try:
+        sources = leak_guard._range_path_sources(
+            "4b825dc642cb6eb9a060e54bf8d69288fbee4904..HEAD")
+        problems = leak_guard.check(["never/existed.txt"], CONFIG,
+                                    path_sources=sources)
+    finally:
+        os.chdir(old_cwd)
+
+    assert len(problems) == 1, problems
+    assert "FileNotFoundError" in problems[0], problems
+    assert "ENVIRONMENT" not in problems[0], problems
+
+
 # --- run(): population selection and the zero-files refusal ------------------
 
 def test_no_staged_files_is_a_pass_not_a_refusal(monkeypatch, capsys):
