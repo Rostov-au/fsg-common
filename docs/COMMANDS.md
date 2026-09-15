@@ -30,6 +30,7 @@ looking for something and the word you tried was not here.
 | do bluebeam and tender-review still answer the same | `python tools/parity_report.py` |
 | is the packaged section snapshot stale | `python scripts/refresh_from_workbook.py --check` |
 | regenerate the section library | `python scripts/refresh_from_workbook.py` |
+| rename the github org / replace Rostov-au everywhere | `python scripts/rename_github_org.py <new-org>` |
 | what commands exist in this repo / I know the task, not the tool's name | `python scripts/gen_commands_index.py` |
 | which resolver questions are still open | `python tools/known_issues.py` |
 | why does 273 CHS 6.4 answer differently in the two repos | `python tools/known_issues.py` |

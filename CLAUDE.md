@@ -65,6 +65,13 @@ entry; both consumers read this copy and neither keeps its own.
   human decision in `scripts/commands_index.json` that the script only reads, so a new
   command stays unfiled and `--check` exits 1 until somebody says which task it serves.
   Never edited by hand. **`--check` runs BLOCKING in `ci.yml`'s `checks` job** — David's decision, 10 Sep 2026. Not in the pre-commit hook: the hook is a local convenience, and this gate has to answer the same way for everyone, which is why it reads `git ls-files` rather than the working tree.
+- `scripts/rename_github_org.py` — **prep for crm#655 gate line 7** (the five repos moving to
+  an FSG-owned org): catalogues every literal `Rostov-au/` across all five repos' tracked
+  files, and with `--apply` rewrites it to `<new-org>/`. Dry-run by default, the new org name
+  is never guessed, and it never commits or pushes — five repos need five separate commits.
+  `docs/org-rename-catalogue-20260915.md` is the 15 Sep 2026 catalogue (132 occurrences across
+  the five repos) this script was written from and verified against. As of that date the org
+  does not exist yet, so `--apply` has only ever run against a throwaway clone.
 
 ## Test and lint
 
