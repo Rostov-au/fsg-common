@@ -11,7 +11,7 @@ Look here when you know the task and not the tool's name. Every description
 below is the tool's own docstring or `help=` string, quoted verbatim -- if one
 reads badly, fix it at the source and regenerate.
 
-Generated from the tracked tree: **0 CLI subcommands**, **4 scripts**, **0 script-level subcommands**, **0 importable helpers** (not commands).
+Generated from the tracked tree: **0 CLI subcommands**, **5 scripts**, **0 script-level subcommands**, **0 importable helpers** (not commands).
 
 ```
 python scripts/gen_commands_index.py           # regenerate
@@ -59,6 +59,14 @@ The section library and labour rates are a generated snapshot of the workbook's 
 | Run | What it does | Defined in |
 | --- | --- | --- |
 | `python scripts/gen_commands_index.py` | Generate docs/COMMANDS.md -- the task-to-command index. | `scripts/gen_commands_index.py` |
+
+## Prep for the GitHub-org rename (crm#655 gate line 7)
+
+The five repos are moving from `Rostov-au` to an FSG-owned org. `rename_github_org.py` catalogues (default) or, with `--apply`, rewrites every literal `Rostov-au/` across all five repos' tracked files -- dry run by default, the new org name is never guessed, and it never commits or pushes. Prep only as of tr#669 (15 Sep 2026): the org does not exist yet, so `--apply` has only ever been run against a throwaway clone.
+
+| Run | What it does | Defined in |
+| --- | --- | --- |
+| `python scripts/rename_github_org.py` | Prep tool for the GitHub-org rename: catalogue and (optionally) replace every | `scripts/rename_github_org.py` |
 
 ## Gaps
 
