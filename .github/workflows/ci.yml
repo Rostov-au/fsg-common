@@ -33,13 +33,21 @@ jobs:
   checks:
     name: Checks (ruff)
     runs-on: [self-hosted, fsg-linux]
+    # PIP_CACHE_DIR/UV_CACHE_DIR point at the self-hosted runner's persistent
+    # cache volumes, not GitHub's own actions/cache. No `cache: pip` on
+    # setup-python below: that option makes the action run `pip cache dir`
+    # itself, which -- unlike a plain `pip install` -- hard-errors (exit 1,
+    # not just a disabled-cache warning) if the directory isn't there or
+    # writable yet, measured directly on this branch before the volumes existed.
+    env:
+      PIP_CACHE_DIR: /pip-cache
+      UV_CACHE_DIR: /uv-cache
     steps:
       - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-          cache: pip
 
       - name: Install
         run: pip install ".[dev]"
@@ -85,13 +93,16 @@ jobs:
     # candidate -- add the Windows leg back before merging that change, not
     # after.
     runs-on: [self-hosted, fsg-linux]
+    # See the `checks` job above for why there's no `cache: pip` here.
+    env:
+      PIP_CACHE_DIR: /pip-cache
+      UV_CACHE_DIR: /uv-cache
     steps:
       - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-          cache: pip
 
       - name: Install
         run: pip install ".[dev]"
