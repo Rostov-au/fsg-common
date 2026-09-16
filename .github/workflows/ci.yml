@@ -104,3 +104,4 @@ jobs:
 
       - name: Tests
         run: PYTHONPATH=src pytest -q
+# dispatch-proof trivial change 2026-09-16T02:57:22Z
