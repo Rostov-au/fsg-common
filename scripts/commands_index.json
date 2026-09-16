@@ -21,6 +21,11 @@
       "id": "org-rename-prep",
       "title": "Prep for the GitHub-org rename (crm#655 gate line 7)",
       "blurb": "The five repos are moving from `Rostov-au` to an FSG-owned org. `rename_github_org.py` catalogues (default) or, with `--apply`, rewrites every literal `Rostov-au/` across all five repos' tracked files -- dry run by default, the new org name is never guessed, and it never commits or pushes. Prep only as of tr#669 (15 Sep 2026): the org does not exist yet, so `--apply` has only ever been run against a throwaway clone."
+    },
+    {
+      "id": "check-a-pull-request-body",
+      "title": "Check a pull request body before it merges",
+      "blurb": "David's rule, all five repos, 16 Sep 2026: no commit carries a co-authorship trailer and no pull request or document carries an AI-tool attribution banner line. `check_pr_body.py` refuses a PR body or first comment that carries either, case-insensitively; run it locally with `--body-file`, or let `pr-body.yml` run it on every open/edit/push. `fsg-estimating-crm` carries the same script with two extra rules (a closing keyword, a word limit) this repo has never adopted."
     }
   ],
   "assign": {
@@ -28,7 +33,8 @@
     "known_issues.py": "check-a-resolver-change",
     "refresh_from_workbook.py": "regenerate-the-library",
     "gen_commands_index.py": "repo-hygiene",
-    "rename_github_org.py": "org-rename-prep"
+    "rename_github_org.py": "org-rename-prep",
+    "check_pr_body.py": "check-a-pull-request-body"
   },
   "aliases": {
     "did my resolver change break the other two repos": "python tools/parity_report.py",

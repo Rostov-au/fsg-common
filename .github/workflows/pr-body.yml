@@ -1,0 +1,43 @@
+# No pull request body or first comment carries an AI attribution line
+# (David's rule, all five FSG repos, 16 Sep 2026; `fsg-estimating-crm` went
+# first). Its own workflow, not a step in ci.yml, because it has to run on
+# `edited` as well -- a body fixed after the fact should turn the check
+# green without a new commit -- and adding `edited` to ci.yml's trigger
+# would re-run the whole suite on every body edit. GitHub-hosted: this is a
+# two-second check that needs no sibling checkout and should not wait on
+# the self-hosted `fsg-linux` runner ci.yml uses.
+name: PR body
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+# One run per PR ref. A body edit or a new push supersedes any run this
+# workflow already has in flight for the same PR.
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  pr-body:
+    name: PR body (no AI attribution line)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+
+      # The earliest issue comment on the PR, or `[]`. Fetched here rather
+      # than inside the script so the script stays stdlib and testable.
+      - name: Fetch the first comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments?per_page=1"
+          > first-comment.json
+
+      - name: Check the body
+        run: python3 scripts/check_pr_body.py --event "$GITHUB_EVENT_PATH" --comments first-comment.json

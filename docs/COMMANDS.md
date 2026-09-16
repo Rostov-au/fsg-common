@@ -11,7 +11,7 @@ Look here when you know the task and not the tool's name. Every description
 below is the tool's own docstring or `help=` string, quoted verbatim -- if one
 reads badly, fix it at the source and regenerate.
 
-Generated from the tracked tree: **0 CLI subcommands**, **5 scripts**, **0 script-level subcommands**, **0 importable helpers** (not commands).
+Generated from the tracked tree: **0 CLI subcommands**, **6 scripts**, **0 script-level subcommands**, **0 importable helpers** (not commands).
 
 ```
 python scripts/gen_commands_index.py           # regenerate
@@ -67,6 +67,14 @@ The five repos are moving from `Rostov-au` to an FSG-owned org. `rename_github_o
 | Run | What it does | Defined in |
 | --- | --- | --- |
 | `python scripts/rename_github_org.py` | Prep tool for the GitHub-org rename: catalogue and (optionally) replace every | `scripts/rename_github_org.py` |
+
+## Check a pull request body before it merges
+
+David's rule, all five repos, 16 Sep 2026: no commit carries a co-authorship trailer and no pull request or document carries an AI-tool attribution banner line. `check_pr_body.py` refuses a PR body or first comment that carries either, case-insensitively; run it locally with `--body-file`, or let `pr-body.yml` run it on every open/edit/push. `fsg-estimating-crm` carries the same script with two extra rules (a closing keyword, a word limit) this repo has never adopted.
+
+| Run | What it does | Defined in |
+| --- | --- | --- |
+| `python scripts/check_pr_body.py` | No pull request body or first comment carries an AI attribution line. | `scripts/check_pr_body.py` |
 
 ## Gaps
 
