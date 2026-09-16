@@ -33,6 +33,9 @@ jobs:
   checks:
     name: Checks (ruff)
     runs-on: [self-hosted, fsg-linux]
+    env:
+      PIP_CACHE_DIR: /pip-cache
+      UV_CACHE_DIR: /uv-cache
     steps:
       - uses: actions/checkout@v7
 
@@ -85,6 +88,9 @@ jobs:
     # candidate -- add the Windows leg back before merging that change, not
     # after.
     runs-on: [self-hosted, fsg-linux]
+    env:
+      PIP_CACHE_DIR: /pip-cache
+      UV_CACHE_DIR: /uv-cache
     steps:
       - uses: actions/checkout@v7
 
