@@ -34,11 +34,33 @@ carried rather than settled by a `RoundingPolicy` each consumer could pick.
 David, relaying the estimating team's answer, 7 Sep 2026: read `CHS 6.4` as
 the metric 6.40 wall -- matches all 94 checkable archive lines, 0 closer to
 the imperial 6.35 the library actually stores. Both resolvers now converge
-on `canonical`, the tender-review reading; the policy split is gone and
-`_is_rounding` applies the one-decimal clause unconditionally. (The
-question's wider half -- whether `90_Lists` should carry a metric CHS range
-of its own, rather than matching the imperial wall by name -- is still
-undecided and is not what this settles.)
+on `canonical`, the tender-review reading.
+
+**That 7 Sep fix converged the VERDICT, not the MASS, and the two are not
+the same thing -- found and corrected 18 Sep 2026.** `_is_rounding`'s
+one-decimal clause is what made `273 CHS 6.4` read `canonical` in both
+resolvers, and a rounding clause returns the LIBRARY's own number: `273
+CHS 6.4` kept coming back as `273CHS6.35` at 41.77 kg/m, the imperial mass,
+just now agreed-on rather than disputed. A drawing writing `6.4` was still
+priced at the 6.35 mass under a verdict that says "trust this." David,
+18 Sep 2026, asked to confirm or correct that reading directly rather than
+re-litigate it: **"Confirm metric, 6.40."** The two masses are not close
+enough to treat as the same rounding -- 41.77 kg/m against a true 6.40mm
+wall's ~42.1 kg/m at this OD (AS/NZS 1163 C350L0, InfraBuild "Know Your
+Steel" V9, Jun 2023) is a 0.8% difference, the same order as the archive's
+own measured 0.785% mean error against the imperial mass and 0.069% against
+the metric one. `90_Lists` has never carried a metric-wall CHS row at any
+OD, so this is a library GAP rather than a wrong entry, and
+`_CHS_METRIC_6_4_OD_KG_PER_M` below is a resolver rule, not a hand-edit to
+`data/fsg_sections.json` -- seeing "do not hand-edit the generated
+library" for what an OD-keyed table like the STR-/LYS- one already is.
+`_is_rounding`'s one-decimal clause still applies to every OTHER CHS wall
+written one decimal short (7.1 for 7.11, 8.2 for 8.18) -- 6.4 is excluded
+because it is now claimed by its own exact match, checked before
+`_is_rounding` is ever reached. (The question's wider half -- whether
+`90_Lists` should carry a metric CHS range of its own, rather than this
+repo asserting individual walls -- is still undecided and is not what this
+settles; fsg-tender-review#184's other questions stay open.)
 
 ## Report how, always
 
@@ -61,10 +83,8 @@ from __future__ import annotations
 import functools
 import re
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    from ._section import Section
+from ._section import Section
 
 __all__ = [
     "SectionLibrary", "ambiguous_candidates", "canonical_candidates",
@@ -737,6 +757,11 @@ def _split_id(section_id: str) -> tuple[str, str, float] | None:
 # repo and `nearest` in the other. ANSWERED 7 Sep 2026
 # (Rostov-au/fsg-tender-review#184 Q25): both resolvers converge on this
 # clause applying -- see the module docstring's "ANSWERED 7 Sep 2026" section.
+# CORRECTED 18 Sep 2026: that convergence settled the verdict but reused
+# this clause's library-mass answer for `6.4`, which is the imperial 6.35
+# mass -- wrong once "metric, 6.40" was confirmed. `6.4` no longer reaches
+# this function at all; `_chs_metric_wall()` claims it first. The clause
+# below still governs every other CHS wall written one decimal short.
 ROUNDING_TOLERANCE = 0.051
 
 
@@ -761,9 +786,77 @@ def _is_rounding(candidate: str, section: Section) -> bool:
     if round(left[2]) == right[2]:
         return True
     # The same rule one decimal down: the library files a CHS wall as
-    # 7.11 / 6.35 / 8.18 (the standard's figure) and every detailer writes
-    # 7.1 / 6.4 / 8.2 -- a rounding, not a near-miss.
+    # 7.11 / 8.18 (the standard's figure) and a detailer writes 7.1 / 8.2 --
+    # a rounding, not a near-miss. NOT 6.4/6.35 any more (CORRECTED 18 Sep
+    # 2026): those are two genuinely different AS/NZS 1163 walls, 0.8%
+    # apart, and `6.4` is claimed by `_chs_metric_wall()` before this
+    # function is ever reached -- see that function and the module
+    # docstring's 18 Sep 2026 section.
     return abs(left[2] - right[2]) <= ROUNDING_TOLERANCE
+
+
+# fsg-tender-review#184 Q25, CONFIRMED METRIC 18 Sep 2026 (David: "Confirm
+# metric, 6.40" -- see the module docstring's 18 Sep 2026 section for the
+# full history). `90_Lists` has never carried a genuine metric-wall CHS row
+# at any OD, so a drawing's `6.4` is a library GAP, not a wrong entry in an
+# existing row, and this table is a resolver rule rather than a hand-edit to
+# `data/fsg_sections.json` -- the next `scripts/refresh_from_workbook.py`
+# run reads `90_Lists` and would silently drop a hand-added row (see that
+# script's own docstring, and `fsg_sections.json`'s `_provenance.note`).
+#
+# Values are AS/NZS 1163 C350L0 published masses, InfraBuild "Know Your
+# Steel" V9 (Jun 2023) Structural CHS table, for every OD this library
+# already carries a `{OD}CHS6.35` (imperial) sibling for. Cross-checked
+# against the plain annulus formula this library's own 6.35mm-wall masses
+# already imply to within 0.3% (mass = 0.024661 * t * (D - t), t and D in
+# mm) -- every entry below agrees with that formula to two figures except
+# where noted. `609.6` has no published cell in InfraBuild's table (listed
+# as `610 x 6.4` with mass blank -- not a stocked combination) and is
+# formula-only: 95.2 kg/m, flagged `published=False` so a caller that cares
+# about provenance can tell the two apart.
+_CHS_METRIC_6_4_OD_KG_PER_M: dict[str, tuple[float, bool]] = {
+    # OD (matches this library's own spelling): (mass_kg_per_m, published)
+    "168.3": (25.5, True),
+    "219.1": (33.6, True),
+    "273": (42.1, True),
+    "323.9": (50.1, True),
+    "355.6": (55.1, True),
+    "406.4": (63.1, True),
+    "457.2": (71.1, True),
+    "508": (79.2, True),
+    "609.6": (95.2, False),
+}
+
+_CHS_METRIC_6_4 = re.compile(r"^(\d+(?:\.\d+)?)CHS6\.4$")
+
+
+def _chs_metric_wall(candidate: str, by_key: dict[str, Section]) -> Section | None:
+    """A `{OD}CHS6.4` candidate, synthesised at the confirmed metric mass.
+
+    Only where the library's own `{OD}CHS6.35` sibling exists -- so this
+    never asserts an OD the library carries no other evidence for, and a
+    genuinely unknown `CHS 6.4` (a size 90_Lists has no row for at all)
+    still falls through to the ordinary `nearest`/`unresolved` path below.
+    """
+    m = _CHS_METRIC_6_4.match(candidate)
+    if not m:
+        return None
+    od = m.group(1)
+    entry = _CHS_METRIC_6_4_OD_KG_PER_M.get(od)
+    if entry is None:
+        return None
+    sibling = by_key.get(loose_key(f"{od}CHS6.35"))
+    if sibling is None:
+        return None
+    mass, _published = entry
+    return Section(
+        section_id=f"{od}CHS6.4",
+        category=sibling.category,
+        build_default=sibling.build_default,
+        mass_kg_per_m=mass,
+        plate_thickness_mm=None,
+        plate_kg_per_m2=None,
+    )
 
 
 class SectionLibrary:
@@ -898,6 +991,9 @@ class SectionLibrary:
             return direct, "exact"
         candidates = canonical_candidates(raw)
         for candidate in candidates:
+            metric = _chs_metric_wall(candidate, self._by_key)
+            if metric is not None:
+                return metric, "canonical"
             hit = self._by_key.get(loose_key(candidate))
             if hit is not None:
                 return hit, "canonical"

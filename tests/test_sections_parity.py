@@ -9,13 +9,17 @@ Once both repos import this package there are no twins left to compare, so
 the vocabulary changes job rather than retiring: every notation in it
 resolves without raising, the cheapest broad regression net there is.
 
-**The one notation the twins genuinely disagreed about is answered now.**
-`273 CHS 6.4` used to produce two different verdicts on purpose, gated by a
-`RoundingPolicy` each consumer picked (`_policy.py`, deleted 7 Sep 2026).
-fsg-tender-review#184 Q25 settled it -- both resolvers converge on
-`canonical` -- so the policy split, `TENDER_REVIEW`/`BLUEBEAM`, and the
-tests that pinned the disagreement are gone; the notation is now a plain
-anchor in `vocabulary.ANCHORS` like any other answered question.
+**The one notation the twins genuinely disagreed about is answered now, in
+two steps.** `273 CHS 6.4` used to produce two different verdicts on
+purpose, gated by a `RoundingPolicy` each consumer picked (`_policy.py`,
+deleted 7 Sep 2026). fsg-tender-review#184 Q25 settled the verdict then --
+both resolvers converge on `canonical` -- but the mass behind that verdict
+was still the library's imperial 6.35 row, not the metric 6.40 one the
+question actually asked about. David confirmed the mass directly on
+18 Sep 2026 ("Confirm metric, 6.40"), and `_chs_metric_wall()` in
+`_resolver.py` applies it. The policy split, `TENDER_REVIEW`/`BLUEBEAM`,
+and the tests that pinned the disagreement are gone; the notation is now a
+plain anchor in `vocabulary.ANCHORS` like any other answered question.
 
 The live three-way comparison against both source repos is
 `tools/parity_report.py`, which reads them at a pinned git ref. It is not a
@@ -85,12 +89,45 @@ def test_every_library_section_resolves_to_itself(corpus):
 def test_the_chs_wall_question_is_settled_not_silently_picked():
     """`273 CHS 6.4` used to produce two different verdicts, gated by a
     `RoundingPolicy` each consumer picked (`_policy.py`, deleted 7 Sep 2026
-    once fsg-tender-review#184 Q25 answered it). This pins that the answer
-    is the one actually decided -- `canonical`, not a silent default -- not
-    just that resolving no longer raises."""
+    once fsg-tender-review#184 Q25 answered the VERDICT). That fix reused
+    `_is_rounding`'s answer, the library's own `273CHS6.35` row at 41.77
+    kg/m -- the imperial mass, not the metric one Q25 actually asked about.
+    David, 18 Sep 2026, asked to confirm or correct that mass directly:
+    "Confirm metric, 6.40." This pins the MASS the question turned on, not
+    only the verdict -- a bare `how == "canonical"` check would have passed
+    on the wrong number for eleven days without ever going red."""
     section, how = sections.resolve("273 CHS 6.4")
-    assert section.section_id == "273CHS6.35"
+    assert section.section_id == "273CHS6.4"
+    assert section.mass_kg_per_m == 42.1
     assert how == "canonical"
+
+
+def test_the_imperial_chs_wall_is_unmoved_by_the_metric_one():
+    """Control: `6.35` written out in full still reaches the library's own
+    imperial row, unchanged. The metric fix must not blur the two together
+    -- they price 0.8% apart, which is the whole reason today's question
+    existed."""
+    section, how = sections.resolve("273 CHS 6.35")
+    assert (section.section_id, how) == ("273CHS6.35", "exact")
+
+
+def test_the_metric_chs_wall_applies_only_where_the_library_has_a_sibling():
+    """`76.1CHS...` carries no `6.35` row in 90_Lists at all (its own
+    ladder is 2.3/3.2/3.6/4.5/5.9), so `76.1 CHS 6.4` must not be asserted
+    against a size the library holds no other evidence for -- it stays
+    unresolved rather than inventing an OD. Control for
+    `_chs_metric_wall`'s sibling-existence guard."""
+    section, how = sections.resolve("76.1 CHS 6.4")
+    assert section is None
+    assert how == "unresolved"
+
+
+def test_other_chs_one_decimal_roundings_are_unaffected():
+    """The one-decimal `_is_rounding` clause still governs every CHS wall
+    OTHER than 6.4/6.35 -- `60.3CHS8.74` written one decimal short stays a
+    rounding of the library's own figure, not a second metric assertion."""
+    section, how = sections.resolve("60.3 CHS 8.7")
+    assert (section.section_id, how) == ("60.3CHS8.74", "canonical")
 
 
 def test_whole_number_rounding_is_unaffected_by_the_settled_question():
