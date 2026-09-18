@@ -40,7 +40,7 @@
     "did my resolver change break the other two repos": "python tools/parity_report.py",
     "do bluebeam and tender-review still answer the same": "python tools/parity_report.py",
     "which resolver questions are still open": "python tools/known_issues.py",
-    "why does 273 CHS 6.4 answer differently in the two repos": "python tools/known_issues.py",
+    "was the 273 CHS 6.4 rounding disagreement between the two repos really fixed": "python tools/known_issues.py",
     "regenerate the section library": "python scripts/refresh_from_workbook.py",
     "is the packaged section snapshot stale": "python scripts/refresh_from_workbook.py --check",
     "what commands exist in this repo / I know the task, not the tool's name": "python scripts/gen_commands_index.py",

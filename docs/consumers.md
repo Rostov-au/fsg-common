@@ -1,8 +1,17 @@
 # Adopting the package in the two consumer repos
 
-Not done. This file is the design, written after reading what each repo
-actually imports, so the work is scoped rather than guessed. Nothing in
-`fsg-tender-review` or `fsg-bluebeam-steel-standards` was modified.
+**Superseded — this adoption is done.** This file is the design, written before either
+shim existed. Both repos now import `fsg_common.sections`: `fsg-tender-review/src/
+fsg_tender_review/resolve.py` is a shim over it, and `fsg-bluebeam-steel-standards/
+tools/fsg_mto/sections.py` re-exports it. **The `RoundingPolicy`/`_policy.py`/
+`BLUEBEAM` mechanism this file's code examples and warning below describe was deleted
+7 Sep 2026** — both source resolvers had already converged on `canonical` for the one
+notation they used to disagree on (`273 CHS 6.4`), so there is nothing left for a
+policy parameter to pick between; see `CLAUDE.md`'s "The CHS 6.4 rounding question" and
+`README.md`'s "The one thing that used to differ, and how it was settled" for the
+current state. Kept below as history, not as a plan to execute — do not follow the
+steps or code as written; read each consumer's own module docstring for what it
+actually does today.
 
 The order matters: Bluebeam first, because it is the larger copy (878 lines
 against 848) and the one whose answers currently depend on a sibling

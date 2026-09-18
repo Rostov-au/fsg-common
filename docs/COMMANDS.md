@@ -31,9 +31,9 @@ looking for something and the word you tried was not here.
 | is the packaged section snapshot stale | `python scripts/refresh_from_workbook.py --check` |
 | regenerate the section library | `python scripts/refresh_from_workbook.py` |
 | rename the github org / replace Rostov-au everywhere | `python scripts/rename_github_org.py <new-org>` |
+| was the 273 CHS 6.4 rounding disagreement between the two repos really fixed | `python tools/known_issues.py` |
 | what commands exist in this repo / I know the task, not the tool's name | `python scripts/gen_commands_index.py` |
 | which resolver questions are still open | `python tools/known_issues.py` |
-| why does 273 CHS 6.4 answer differently in the two repos | `python tools/known_issues.py` |
 
 ## Check a resolver change before it merges, and see what is still unsettled
 
