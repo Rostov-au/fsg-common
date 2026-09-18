@@ -40,23 +40,34 @@ def rule(title: str) -> None:
 
 
 def issue_1_chs_wall() -> bool:
-    """RESOLVED 7 Sep 2026. Was the one notation the two source resolvers
-    disagreed about -- item 1 of Rostov-au/fsg-tender-review#184, "Questions
-    for the estimators". David, relaying the estimating team's answer: read
-    `CHS 6.4` as the metric 6.40 wall, matching all 94 checkable archive
-    lines. Both resolvers now converge on `canonical`; the `RoundingPolicy`
-    split (`_policy.py`) that carried the disagreement is deleted. Kept as a
-    reproducer rather than removed, same convention as issue 3 below.
+    """RESOLVED IN TWO STEPS -- 7 Sep 2026 (verdict) and 18 Sep 2026 (mass).
+    Was the one notation the two source resolvers disagreed about -- item 1
+    of Rostov-au/fsg-tender-review#184, "Questions for the estimators".
+
+    7 Sep 2026: David, relaying the estimating team's answer, converged both
+    resolvers on `canonical` rather than a `RoundingPolicy` split
+    (`_policy.py`, now deleted). That step only settled the VERDICT: the
+    mass behind it was still `273CHS6.35` at 41.77 kg/m, the library's
+    imperial figure, not the metric 6.40 wall the question asked about --
+    `how != "canonical"` was the only check this reproducer made, so it
+    reported RESOLVED for eleven days on the wrong number.
+
+    18 Sep 2026: David confirmed the mass directly, "Confirm metric, 6.40".
+    `_chs_metric_wall()` in `_resolver.py` now returns a synthesised
+    `273CHS6.4` row at 42.1 kg/m (AS/NZS 1163 C350L0, not a hand-edit to
+    the generated `data/fsg_sections.json`). This reproducer now checks the
+    ID and the mass, not only the verdict word.
     """
-    rule("1. `273 CHS 6.4` -- the open estimator question (RESOLVED 7 Sep 2026)")
+    rule("1. `273 CHS 6.4` -- the open estimator question (RESOLVED 18 Sep 2026)")
     section, how = sections.resolve("273 CHS 6.4")
     print(f"  {section.section_id} @ {section.mass_kg_per_m} kg/m  -> {how!r}")
     print()
     print("  The library's ladder is imperial pipe (6.35); FSG's three most common")
     print("  archive walls are metric (3.2, 4.8, 6.4). The estimating team's answer:")
     print("  `CHS 6.4` means the metric wall, matching all 94 checkable archive")
-    print("  lines (0 closer to imperial). Both resolvers converge on `canonical`.")
-    live = how != "canonical"
+    print("  lines (0 closer to imperial). Confirmed 18 Sep 2026: `273CHS6.4` @")
+    print("  42.1 kg/m, not the library's own 41.77 imperial figure.")
+    live = how != "canonical" or section.section_id != "273CHS6.4"
     print(f"\n  STILL LIVE: {live}   (True means the answer stopped applying -- check why)")
     return live
 
@@ -137,7 +148,8 @@ def main() -> int:
     print("fsg-common -- known issues, re-derived live")
     print(f"library: {sections.vintage_line()}")
     results = [
-        ("1  273 CHS 6.4, the open estimator question (fixed 7 Sep 2026)",
+        ("1  273 CHS 6.4, the open estimator question (verdict fixed 7 Sep, "
+         "mass fixed 18 Sep 2026)",
          issue_1_chs_wall()),
         ("2  mass_of() returns kg/m2 for floor plate", issue_2_mass_of_floor_plate()),
         ("3  SS is not recognised as stainless (fixed 5 Sep 2026)",

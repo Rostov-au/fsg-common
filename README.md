@@ -51,27 +51,33 @@ because a corpus only catches what it exercises, and the two hardest defects
 this resolver has had were both cases where the twins agreed with each other
 and were both wrong.
 
-## The one thing that differs, and why it is a parameter
+## The one thing that used to differ, and how it was settled
 
-`273 CHS 6.4` resolves to `273CHS6.35` at 41.77 kg/m in both repos.
-`fsg-tender-review` labels it `canonical`; the Bluebeam toolkit labels it
-`nearest`. Same section, same mass, different verdict, and the verdict is what
-decides whether an estimator is asked to look at the line.
+`273 CHS 6.4` used to resolve to `273CHS6.35` at 41.77 kg/m in both repos --
+`fsg-tender-review` labelled it `canonical`, the Bluebeam toolkit labelled it
+`nearest`. Same section, same mass, different verdict, and the verdict decided
+whether an estimator was asked to look at the line. That was an open question
+for FSG's estimators, item 1 of Rostov-au/fsg-tender-review#184, carried by a
+`RoundingPolicy` parameter (`_policy.py`) rather than picked.
 
-That is an open question for FSG's estimators, not a defect. It is item 1 of
-Rostov-au/fsg-tender-review#184, and the standing instruction on #180 is that
-both resolvers stay as they are until an estimator answers.
-
-So the package carries it rather than settling it:
+**Answered in two steps.** 7 Sep 2026: both resolvers converged on
+`canonical` and `_policy.py` was deleted -- but that only settled the
+VERDICT. The mass behind it was still the library's own `273CHS6.35`, the
+imperial 6.35 mm wall, not the metric 6.40 mm one the question actually
+asked about. 18 Sep 2026: David confirmed the mass directly, "Confirm
+metric, 6.40". `273 CHS 6.4` now resolves to a synthesised `273CHS6.4` at
+42.1 kg/m (AS/NZS 1163 C350L0) -- a resolver rule (`_chs_metric_wall()` in
+`_resolver.py`), not a hand-edit to the generated `data/fsg_sections.json`,
+because `90_Lists` has never carried a metric-wall CHS row at all:
 
 ```python
-sections.resolve("273 CHS 6.4", sections.TENDER_REVIEW)  # -> canonical
-sections.resolve("273 CHS 6.4", sections.BLUEBEAM)       # -> nearest
+sections.resolve("273 CHS 6.4")   # -> ('273CHS6.4', 42.1, 'canonical')
+sections.resolve("273 CHS 6.35")  # -> ('273CHS6.35', 41.77, 'exact')
 ```
 
-`TENDER_REVIEW` is the default. Both policies agree on every other notation in
-the corpus, and a test asserts that. When the estimators answer, delete
-`_policy.py`, inline the winning branch, and delete the test that guards it.
+The question's wider half -- whether `90_Lists` should carry a full metric
+CHS range of its own, rather than this package asserting individual walls --
+is still open.
 
 ## Layout
 

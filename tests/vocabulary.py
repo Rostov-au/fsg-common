@@ -123,15 +123,18 @@ ANCHORS = [
     ("C15024", "bare, refuses (cold-formed), 1 archive line"),
     ("Z99999", "a syntactically valid but non-existent depth/BMT -- stays "
               "an honest refusal, never guessed via nearest"),
-    # fsg-tender-review#184 Q25, ANSWERED 7 Sep 2026: `CHS 6.4` is a wall
-    # written one decimal short of the library's 6.35 -- until today the
-    # two source resolvers disagreed on the verdict (canonical vs nearest,
-    # same section and mass). Now converged: both resolvers were held
-    # under `KNOWN_OPEN_QUESTION` in this file until the answer landed;
-    # this replaces that entry.
-    ("273 CHS 6.4", "canonical, not nearest -- the estimating team's answer "
-                    "was to read it as the metric 6.40 wall, matching all "
-                    "94 checkable archive lines"),
+    # fsg-tender-review#184 Q25: `CHS 6.4` is a wall written one decimal
+    # short of the library's 6.35. The two source resolvers' VERDICT
+    # disagreement (canonical vs nearest) was answered 7 Sep 2026; both
+    # resolvers were held under `KNOWN_OPEN_QUESTION` in this file until
+    # then, and this replaces that entry. The MASS behind that verdict
+    # stayed the library's imperial 6.35 figure until David confirmed the
+    # metric one directly, 18 Sep 2026 ("Confirm metric, 6.40") --
+    # `_chs_metric_wall()` in `_resolver.py` now applies it.
+    ("273 CHS 6.4", "canonical, at the metric 6.40 wall's own mass (42.1 "
+                    "kg/m, not the library's 41.77) -- the estimating "
+                    "team's answer, matching all 94 checkable archive "
+                    "lines, confirmed directly 18 Sep 2026"),
     # fsg-tender-review#184 Q27, ANSWERED 7 Sep 2026: STR-/LYS- cold-formed
     # purlins at matching shape/depth/BMT are a genuine standard-product
     # fact, so a vendor-prefixed code whose own row is missing aliases to
