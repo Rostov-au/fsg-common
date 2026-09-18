@@ -86,7 +86,6 @@ src/fsg_common/sections/
     _resolver.py    the grammar and SectionLibrary; a near-verbatim copy
     _section.py     the Section dataclass
     _snapshot.py    reading the library, from the packaged JSON or a workbook
-    _policy.py      the one open question, carried
     substitutions.py  an estimator's recorded size swap
     data/           the generated section snapshot. Never hand-edit.
 scripts/refresh_from_workbook.py   regenerates data/fsg_sections.json
