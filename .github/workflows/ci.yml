@@ -56,7 +56,9 @@ jobs:
         run: ruff check .
 
       - name: docs/COMMANDS.md matches the code (task-to-command index)
-        # Blocking, on David's decision of 10 Sep 2026. The index answers
+        # Fails this job on a miss, on David's decision of 10 Sep 2026 --
+        # not merge-blocking: branch protection here has no required checks
+        # (tr#656), so this only turns the job red. The index answers
         # "I know the task, not the tool's name -- what do I run?", which the
         # rationale-ordered docs cannot. It is generated, so it can only stay
         # true if something checks it.

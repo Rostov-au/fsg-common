@@ -12,7 +12,7 @@ fsg_sections.json`, a snapshot of the workbook's `90_Lists`), the resolver that 
 drawing's notation into a canonical `Section_ID` or an honest miss, the two rounding policies
 the source resolvers disagreed on, and the estimator's substitution list. Two repos import
 it: `fsg-tender-review` (`resolve.py` is a shim over it) and `fsg-bluebeam-steel-standards`
-(`tools/fsg_mto/sections.py`, which vendors a copy of this package into the share payload).
+(`tools/fsg_mto/sections.py`, which vendors a copy into the share payload).
 This repo decides tonnages for both, so it carries their non-negotiables.
 
 ## Invariants
@@ -24,7 +24,7 @@ Each rule says what to do and what catches you if you don't.
 | **A section the library cannot resolve is a finding, never a guess.** `200 PFC` joins to `200PFC`; `250UB` is three sections and stays unresolved with its candidates named; `6 x 100 x 10 FL` is an honest miss, not 100FL6. A candidate that lands on no real row does not resolve. | `tests/test_sections_anchors.py`, `tests/test_resolver.py`; `tools/parity_report.py` scores whether a change moved the right notations. |
 | **Matching is on `mass_kg_per_m`, never the id's digits.** FSG's ids round the mass (250UB25.7 is filed 250UB26), so `nearest` is a tolerance on mass with a margin over the runner-up, and a decimal wall that only the head moved is the same section. | `NEAREST_TOLERANCE`, `NEAREST_MARGIN`, `HEAD_TOLERANCE` in `_resolver.py` and their tests. |
 | **A modifier is one of three kinds and they do not blur.** *Material* refuses (`STAINLESS 10 ROD`, `SS`, `ALUMINIUM` give `material-mismatch`). *Finish* drops (`GALV` is the same steel). *Shape* drops only where the library carries that shape (`10 SQ ROD` is 10SQ); where it does not (`THREADED`, `HEX`) the answer is `shape-modifier`, naming the word and the plain section it ruled out, never that section asserted as canonical. | `_NON_STEEL` and `_SHAPE_MODIFIER` in `_resolver.py`; `tests/vocabulary.py` carries the notations. |
-| **Every change runs `python tools/parity_report.py` against both consumers before it merges.** It reads each consumer's resolver out of its git object store at a pinned ref, never a working tree, and prints the snapshot's rows, date and hash every time. Exit 1 is a disagreement or a comparison it could not establish; neither is a pass. Since both consumers import this package, A-vs-B and A-vs-C are near-tautologies; the report's value now is the snapshot identity line and the B-vs-C policy difference (`273 CHS 6.4`, carried deliberately in `_policy.py`). | A person, and the parity report's own exit code. |
+| **Every change runs `python tools/parity_report.py` against both consumers before it merges.** It reads each consumer's resolver out of its git object store at a pinned ref, never a working tree, and prints the snapshot's rows, date and hash every time. Exit 1 is a disagreement or a comparison it could not establish; neither is a pass. Since both consumers import this package, A-vs-B and A-vs-C are near-tautologies; the report's value is the snapshot identity line and the B-vs-C policy difference (`273 CHS 6.4`, carried deliberately in `_policy.py`). | A person, and the parity report's own exit code. |
 | **Fix the case named and the case beside it.** The 6 Sep 2026 code review found eight fixes in five days that broke the neighbouring notation (the sorted flat-bar candidate read `6 x 100 x 10 FL` as 100FL6 while making `FL 100 X 10` work). Every resolver change ships with the neighbouring spellings pinned in the same test file. | `tests/test_resolver.py` is the pattern: the fix and its neighbours together. |
 
 ## The two rounding policies
@@ -64,7 +64,7 @@ entry; both consumers read this copy and neither keeps its own.
   the tracked tree, so it cannot silently fall behind the code; the task grouping is a
   human decision in `scripts/commands_index.json` that the script only reads, so a new
   command stays unfiled and `--check` exits 1 until somebody says which task it serves.
-  Never edited by hand. **`--check` runs BLOCKING in `ci.yml`'s `checks` job** — David's decision, 10 Sep 2026. Not in the pre-commit hook: the hook is a local convenience, and this gate has to answer the same way for everyone, which is why it reads `git ls-files` rather than the working tree.
+  Never edited by hand. **`--check` fails `ci.yml`'s `checks` job, and nothing stops a merge anyway** — David's decision, 10 Sep 2026. Not in the pre-commit hook: the hook is a local convenience, and this gate has to answer the same way for everyone, which is why it reads `git ls-files` rather than the working tree.
 - `scripts/rename_github_org.py` — **prep for crm#655 gate line 7** (the five repos moving to
   an FSG-owned org): catalogues every literal `Rostov-au/` across all five repos' tracked
   files, and with `--apply` rewrites it to `<new-org>/`. Dry-run by default, the new org name
