@@ -55,6 +55,29 @@ jobs:
       - name: ruff check
         run: ruff check .
 
+      - name: The compulsory reading path stays under 30,500 words
+        # crm#557/crm#635, and the estate-wide rollout of 19 Sep 2026: a doc
+        # edit in ANY of the five repos can push the shared total over the
+        # cap, and until now only fsg-estimating-crm's own CI re-measured
+        # it -- so a change here could turn crm's PRs red without this
+        # repo's own CI ever going red for the same reason. Same script,
+        # same credential, same rule in all five repos now; this is
+        # fsg-common's own copy (`fsg_common.reading_path` is also the
+        # shared implementation the other four repos' wrappers call).
+        #
+        # `FSG_COMMON_PAT` is not yet a secret on THIS repo -- four of the
+        # six files live in private repos this workflow's own GITHUB_TOKEN
+        # cannot read, so until the secret is added this step REFUSES
+        # (exit 2) rather than silently passing on a total that only ever
+        # counted this repo's own CLAUDE.md. That refusal is the point:
+        # "a check that cannot read its inputs must refuse, not pass" is
+        # this estate's own rule, and it applies to this gate first.
+        if: '!cancelled()'
+        env:
+          FSG_COMMON_PAT: ${{ secrets.FSG_COMMON_PAT }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: python scripts/check_reading_path_word_count.py
+
       - name: docs/COMMANDS.md matches the code (task-to-command index)
         # Fails this job on a miss, on David's decision of 10 Sep 2026 --
         # not merge-blocking: branch protection here has no required checks

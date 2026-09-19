@@ -26,6 +26,11 @@
       "id": "check-a-pull-request-body",
       "title": "Check a pull request body before it merges",
       "blurb": "David's rule, all five repos, 16 Sep 2026: no commit carries a co-authorship trailer and no pull request or document carries an AI-tool attribution banner line. `check_pr_body.py` refuses a PR body or first comment that carries either, case-insensitively; run it locally with `--body-file`, or let `pr-body.yml` run it on every open/edit/push. `fsg-estimating-crm` carries the same script with two extra rules (a closing keyword, a word limit) this repo has never adopted."
+    },
+    {
+      "id": "check-the-reading-path-word-cap",
+      "title": "Check the estate-wide compulsory reading path stays under its word cap",
+      "blurb": "crm#557/crm#635, estate-wide rollout 19 Sep 2026: the six-file reading path (one CLAUDE.md per repo, plus fsg-tender-review/docs/README.md) must stay under 30,500 words, because a doc edit in any one repo can push the shared total over and turn an unrelated repo's PRs red. The real logic lives in `fsg_common.reading_path` -- this is fsg-common's own thin wrapper, same as the copy in each of the other four repos; each names which repo it is running in and calls the shared `main()`. Needs FSG_COMMON_PAT (or GH_TOKEN/GITHUB_TOKEN) to read the four private repos over the API; refuses rather than passing without one."
     }
   ],
   "assign": {
@@ -34,7 +39,8 @@
     "refresh_from_workbook.py": "regenerate-the-library",
     "gen_commands_index.py": "repo-hygiene",
     "rename_github_org.py": "org-rename-prep",
-    "check_pr_body.py": "check-a-pull-request-body"
+    "check_pr_body.py": "check-a-pull-request-body",
+    "check_reading_path_word_count.py": "check-the-reading-path-word-cap"
   },
   "aliases": {
     "did my resolver change break the other two repos": "python tools/parity_report.py",
@@ -44,6 +50,7 @@
     "regenerate the section library": "python scripts/refresh_from_workbook.py",
     "is the packaged section snapshot stale": "python scripts/refresh_from_workbook.py --check",
     "what commands exist in this repo / I know the task, not the tool's name": "python scripts/gen_commands_index.py",
-    "rename the github org / replace Rostov-au everywhere": "python scripts/rename_github_org.py <new-org>"
+    "rename the github org / replace Rostov-au everywhere": "python scripts/rename_github_org.py <new-org>",
+    "is the reading path over the word cap": "python scripts/check_reading_path_word_count.py"
   }
 }
