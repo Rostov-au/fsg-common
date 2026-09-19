@@ -11,7 +11,7 @@ Look here when you know the task and not the tool's name. Every description
 below is the tool's own docstring or `help=` string, quoted verbatim -- if one
 reads badly, fix it at the source and regenerate.
 
-Generated from the tracked tree: **0 CLI subcommands**, **6 scripts**, **0 script-level subcommands**, **0 importable helpers** (not commands).
+Generated from the tracked tree: **0 CLI subcommands**, **7 scripts**, **0 script-level subcommands**, **0 importable helpers** (not commands).
 
 ```
 python scripts/gen_commands_index.py           # regenerate
@@ -29,6 +29,7 @@ looking for something and the word you tried was not here.
 | did my resolver change break the other two repos | `python tools/parity_report.py` |
 | do bluebeam and tender-review still answer the same | `python tools/parity_report.py` |
 | is the packaged section snapshot stale | `python scripts/refresh_from_workbook.py --check` |
+| is the reading path over the word cap | `python scripts/check_reading_path_word_count.py` |
 | regenerate the section library | `python scripts/refresh_from_workbook.py` |
 | rename the github org / replace Rostov-au everywhere | `python scripts/rename_github_org.py <new-org>` |
 | was the 273 CHS 6.4 rounding disagreement between the two repos really fixed | `python tools/known_issues.py` |
@@ -75,6 +76,14 @@ David's rule, all five repos, 16 Sep 2026: no commit carries a co-authorship tra
 | Run | What it does | Defined in |
 | --- | --- | --- |
 | `python scripts/check_pr_body.py` | No pull request body or first comment carries an AI attribution line. | `scripts/check_pr_body.py` |
+
+## Check the estate-wide compulsory reading path stays under its word cap
+
+crm#557/crm#635, estate-wide rollout 19 Sep 2026: the six-file reading path (one CLAUDE.md per repo, plus fsg-tender-review/docs/README.md) must stay under 30,500 words, because a doc edit in any one repo can push the shared total over and turn an unrelated repo's PRs red. The real logic lives in `fsg_common.reading_path` -- this is fsg-common's own thin wrapper, same as the copy in each of the other four repos; each names which repo it is running in and calls the shared `main()`. Needs FSG_COMMON_PAT (or GH_TOKEN/GITHUB_TOKEN) to read the four private repos over the API; refuses rather than passing without one.
+
+| Run | What it does | Defined in |
+| --- | --- | --- |
+| `python scripts/check_reading_path_word_count.py` | fsg-common's own copy of the estate-wide reading-path word gate. | `scripts/check_reading_path_word_count.py` |
 
 ## Gaps
 
