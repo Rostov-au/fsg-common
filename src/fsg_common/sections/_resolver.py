@@ -144,8 +144,11 @@ _TYPE_WORDS = [
     (r"(?<![A-Z])RHS(?![A-Z])|RECTANGULAR\s+HOLLOW", "RHS"),
     (r"(?<![A-Z])BPL(?![A-Z])|BISALLOY|(?<![A-Z])BIS(?![A-Z])", "BPL"),
     # Floor/chequer/tread plate is a distinct library family, not plain plate:
-    # 6FP is 49.1 kg/m2 against 6PL's 47.1, a different weight class and
-    # labour rate, not a rounding difference. Must come before the generic
+    # Its own family by labour rate. The masses no longer differ: 6FP read
+    # 49.1 kg/m2 against 6PL's 47.1 until 24 Sep 2026, but that 49.1 was a
+    # stale cache of the tread allowance Q3 dropped (fsg-estimating-tools#385),
+    # and both are 47.1 now. Keyword-matched, never mass-matched, so nothing
+    # below depends on the difference. Must come before the generic
     # PLATE pattern below or it is swallowed as plain PL.
     (r"(?:FLOOR|CHEQUER|CHECKER|TREAD)\s*PLATE", "FP"),
     # Compound spellings are one word on a lot of drawings -- BASEPLATE,
@@ -506,7 +509,8 @@ _DIALECT_PLATE = re.compile(r"^PLT\s*([\d.]+)(?:\s*[*X]\s*([\d.]+))?\s*$")
 _DIALECT_PLATE_SHORT = re.compile(r"^PL([\d.]+)\s*[*X]\s*([\d.]+)\s*$")
 _DIALECT_FLAT = re.compile(r"^FLT?\s*([\d.]+)\s*[*X]\s*([\d.]+)\s*$")
 # `FLRPL8x1500`: floor (chequer) plate, 8 thick x 1500 wide -- the FP family,
-# not PL (49.1 vs 47.1 kg/m2 and a different labour rate). Width dropped as
+# not PL (a different labour rate; the masses agree at 47.1 kg/m2 since
+# fsg-estimating-tools#385). Width dropped as
 # for PLT. Must be tried before the plate patterns, which it would otherwise
 # never reach: `PL` does not match, but a looser future pattern might.
 _DIALECT_FLOOR_PLATE = re.compile(r"^FLRPL\s*([\d.]+)(?:\s*[*X]\s*([\d.]+))?\s*$")

@@ -286,7 +286,10 @@ def test_floor_plate_is_priced_by_area():
     section, _how = sections.resolve("6 mm FLOOR PLATE")
     assert section.section_id == "6FP"
     assert section.is_plate
-    assert section.kg_per_m2 == 49.1
+    # 49.1 until 24 Sep 2026: that was 90_Lists column G's stale formula cache
+    # (fsg-estimating-tools#385), 2.00 kg over the true 6 mm plate mass of
+    # 47.1 kg/m2 in column F. The anchor was pinning the defect.
+    assert section.kg_per_m2 == 47.1
 
 
 def test_mass_of_hands_back_an_AREA_mass_for_floor_plate():
@@ -296,7 +299,7 @@ def test_mass_of_hands_back_an_AREA_mass_for_floor_plate():
     the library prices by area rather than by length". That holds for the
     `PL` family, whose `mass_kg_per_m` really is None. It does NOT hold for
     floor plate: `90_Lists` files an `FP` row's kg/m2 in the kg/m COLUMN, so
-    `mass_kg_per_m` is 49.1 and `mass_of` returns it through an API named and
+    `mass_kg_per_m` is 47.1 and `mass_of` returns it through an API named and
     documented per metre.
 
     A caller doing `qty * length_m * mass_of(...)` on a floor-plate line
@@ -309,8 +312,8 @@ def test_mass_of_hands_back_an_AREA_mass_for_floor_plate():
     resolver without moving any answer. Raised for that repo; run
     `tools/known_issues.py` for the live reproducer.
     """
-    assert sections.mass_of("6 mm FLOOR PLATE") == 49.1
-    assert sections.resolve("6 mm FLOOR PLATE")[0].kg_per_m2 == 49.1
+    assert sections.mass_of("6 mm FLOOR PLATE") == 47.1
+    assert sections.resolve("6 mm FLOOR PLATE")[0].kg_per_m2 == 47.1
     # the PL family, where the documented contract does hold
     assert sections.mass_of("12 PL") is None
     assert sections.resolve("12 PL")[0].is_plate
