@@ -79,12 +79,11 @@ class Verdict(unittest.TestCase):
         """The fixture proving the gate catches growth, not just runs under
         a limit it happens to already be under."""
         counts = {
-            rp.FILES[0]: 5_532,
-            rp.FILES[1]: 11_674,
-            rp.FILES[2]: 2_490,
-            rp.FILES[3]: 6_019,
-            rp.FILES[4]: 1_472,
-            rp.FILES[5]: 986 + 6_000,  # the synthetic bloat
+            rp.FILES[0]: 7_208,
+            rp.FILES[1]: 5_763,
+            rp.FILES[2]: 6_900,
+            rp.FILES[3]: 1_615,
+            rp.FILES[4]: 1_087 + 8_000,  # the synthetic bloat
         }
         code, lines = rp.verdict(counts)
         self.assertEqual(code, 1)
@@ -134,11 +133,18 @@ class Token(unittest.TestCase):
 
 class ThisRepoParameterisation(unittest.TestCase):
     """The property that did not exist before this module: which repo is
-    "local" is a parameter, not a hardcoded constant -- a repo that owns two
-    files (fsg-tender-review) must read both locally, and a repo that owns
-    none must refuse rather than silently reading nothing as zero."""
+    "local" is a parameter, not a hardcoded constant -- a repo that owns
+    more than one file must read all of them locally, and a repo that owns
+    none must refuse rather than silently reading nothing as zero.
+
+    No repo in the real `FILES` owns two files today (fsg-tender-review's
+    `docs/README.md` was removed from the compulsory set 25 Sep 2026,
+    crm#1009), so the two-file case is exercised here against a synthetic
+    `FILES` rather than the real one -- the capability is still real code
+    and still needs a test that can fail."""
 
     def test_a_repo_that_owns_two_files_reads_both_locally(self):
+        synthetic_files = rp.FILES + (("fsg-tender-review", "docs/README.md"),)
         with tempfile.TemporaryDirectory() as tmp:
             os.makedirs(os.path.join(tmp, "docs"))
             Path(tmp, "CLAUDE.md").write_text("a b c", encoding="utf-8")
@@ -153,7 +159,8 @@ class ThisRepoParameterisation(unittest.TestCase):
             old = os.environ.get("FSG_COMMON_PAT")
             os.environ["FSG_COMMON_PAT"] = "tok"
             try:
-                with mock.patch.object(rp, "read_via_api", side_effect=api_read):
+                with mock.patch.object(rp, "FILES", synthetic_files), \
+                     mock.patch.object(rp, "read_via_api", side_effect=api_read):
                     code = rp.main("fsg-tender-review", [], repo_root=tmp)
             finally:
                 if old is None:
@@ -165,12 +172,20 @@ class ThisRepoParameterisation(unittest.TestCase):
             self.assertNotIn(("fsg-tender-review", "CLAUDE.md"), calls)
             self.assertNotIn(("fsg-tender-review", "docs/README.md"), calls)
             # Every other repo's file did go over the API.
-            other_repos = {repo for repo, _ in rp.FILES if repo != "fsg-tender-review"}
+            other_repos = {repo for repo, _ in synthetic_files if repo != "fsg-tender-review"}
             self.assertEqual({r for r, _ in calls}, other_repos)
 
-    def test_a_repo_that_owns_none_of_the_six_files_refuses(self):
+    def test_a_repo_that_owns_none_of_the_files_refuses(self):
         code = rp.main("some-other-repo", [], repo_root=tempfile.gettempdir())
         self.assertEqual(code, 2)
+
+    def test_every_real_repo_owns_exactly_one_file_today(self):
+        """Not a rule -- just today's fact, pinned so the next reader of
+        this test notices if it changes rather than assuming it still
+        holds."""
+        from collections import Counter
+        counts = Counter(repo for repo, _ in rp.FILES)
+        self.assertTrue(all(n == 1 for n in counts.values()), counts)
 
 
 class TheCommandLine(unittest.TestCase):
