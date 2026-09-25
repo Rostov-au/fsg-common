@@ -3,10 +3,24 @@
 ## What this is, and why it lives here rather than in five repos
 
 David's decision on crm#557, 11 Sep 2026: cap the compulsory reading path --
-one `CLAUDE.md` per FSG repo plus `fsg-tender-review/docs/README.md`, which
-that repo's own `CLAUDE.md` names "Start here" -- the words a session pays
-for on every single run, before any pointer sends it anywhere else. Raised
-from 30,000 to 30,500 on crm#635, 18 Sep 2026.
+one `CLAUDE.md` per FSG repo, plus (at the time) `fsg-tender-review/docs/
+README.md`, which that repo's own `CLAUDE.md` named "Start here" -- the
+words a session pays for on every single run, before any pointer sends it
+anywhere else. Raised from 30,000 to 30,500 on crm#635, 18 Sep 2026.
+
+**Narrowed, not raised again, 25 Sep 2026 (crm#1009).** Headroom fell to
+about fifteen words twice in three days -- 30,495/30,500 on 23 Sep, then
+30,490/30,500 on 24 Sep -- each time from one lane's ordinary edit to a
+`CLAUDE.md` landing in an unrelated repo's PR. David considered raising the
+limit again and running another trim pass, and rejected both: "narrow what
+counts as compulsory" instead. `fsg-tender-review/docs/README.md` is removed
+from `FILES` here. It earned the "Start here" label on 11 Sep, but that
+repo's own `CLAUDE.md` has since restated its role as the map, read "before
+touching a module you have not touched before" -- on demand, once a pointer
+names it, not a page every session pays for regardless of what it touches.
+The gate had not caught up to that restatement. The file itself is
+untouched, still linked from `CLAUDE.md`'s "Where things live", still the
+map -- only this word-cap gate stops counting it.
 
 This check first shipped as a 300-line script duplicated inside
 `fsg-estimating-crm` alone (`scripts/check_reading_path_word_count.py`,
@@ -41,21 +55,24 @@ kind of parameter, defaulting to `os.getcwd()`, which is correct both in a
 CI step (actions/checkout leaves you at the repo root) and for a person
 running the wrapper from their own checkout.
 
-A repo can own more than one local file -- `fsg-tender-review` owns both
-`CLAUDE.md` and `docs/README.md` -- so `main()` reads every `FILES` entry
-whose repo matches `this_repo` from disk, and everything else over the
-GitHub API.
+A repo CAN own more than one local file -- `main()` reads every `FILES`
+entry whose repo matches `this_repo` from disk, and everything else over
+the GitHub API. No repo currently does (fsg-tender-review was the one
+example, until `docs/README.md` was removed from `FILES` on 25 Sep 2026,
+crm#1009); the capability stays because a repo splitting its compulsory
+rules across two files is a legitimate shape this module should not
+special-case away.
 
 ## Credential
 
 Same pattern `scripts/vendor_fsg_common.py` and
 `fsg-tender-review/scripts/check_fsg_common_pins.py` already use for this
 exact problem: `FSG_COMMON_PAT` first (David's classic PAT, `repo` scope),
-then `GH_TOKEN`, then `GITHUB_TOKEN`. Four of the five files this module
+then `GH_TOKEN`, then `GITHUB_TOKEN`. Three of the four files this module
 reads over the API live in private repos; a workflow's own `GITHUB_TOKEN` is
 scoped to its own repository and cannot read them. **Absent input must not
 answer**: no credential is a REFUSAL (exit 2), never a total that silently
-omitted four of six files. A repo whose CI has no `FSG_COMMON_PAT` secret
+omitted four of five files. A repo whose CI has no `FSG_COMMON_PAT` secret
 refuses every run until one is added -- that is this module working, not a
 bug to route around.
 
@@ -98,15 +115,14 @@ OWNER = "Rostov-au"
 WORD_LIMIT = 30_500
 
 # The compulsory reading path, per David's decision on crm#557 (11 Sep
-# 2026). Order matches the issue's own table: one CLAUDE.md per repo, then
-# the tender-review architecture doc that repo's own CLAUDE.md names
-# "Start here". A single copy of this tuple, read by all five repos' own
+# 2026), narrowed by crm#1009 (25 Sep 2026): `fsg-tender-review/docs/
+# README.md` removed -- see the module docstring for why. One `CLAUDE.md`
+# per repo. A single copy of this tuple, read by all five repos' own
 # wrapper scripts -- previously five places this list could silently drift
 # apart from each other.
 FILES: tuple[tuple[str, str], ...] = (
     ("fsg-estimating-crm", "CLAUDE.md"),
     ("fsg-tender-review", "CLAUDE.md"),
-    ("fsg-tender-review", "docs/README.md"),
     ("fsg-estimating-tools", "CLAUDE.md"),
     ("fsg-bluebeam-steel-standards", "CLAUDE.md"),
     ("fsg-common", "CLAUDE.md"),
@@ -295,9 +311,10 @@ def main(this_repo: str, argv: list[str] | None = None, repo_root: str | None = 
     local_paths = tuple(path for repo, path in FILES if repo == this_repo)
     if not local_paths:
         known = sorted({repo for repo, _ in FILES})
-        print(f"REFUSED: {this_repo!r} owns none of the six files in the "
-              f"compulsory reading path ({known}). This check is running in "
-              "the wrong repo, or FILES and the caller have drifted apart.")
+        print(f"REFUSED: {this_repo!r} owns none of the {len(FILES)} files "
+              f"in the compulsory reading path ({known}). This check is "
+              "running in the wrong repo, or FILES and the caller have "
+              "drifted apart.")
         return 2
 
     tok = token()
@@ -313,8 +330,9 @@ def main(this_repo: str, argv: list[str] | None = None, repo_root: str | None = 
                     "(fsg-tender-review#639): a maintainer's own re-run of the "
                     "SAME run still saw the credential empty. This run's own "
                     f"diff was checked against PR_BASE_SHA and does not touch "
-                    f"{', '.join(local_paths)}, the file(s) among the six this "
-                    f"repo's own tree could have changed. The estate-wide "
+                    f"{', '.join(local_paths)}, the file(s) among the "
+                    f"{len(FILES)} this repo's own tree could have changed. "
+                    "The estate-wide "
                     "total still gets re-measured on every push to main and "
                     "on every PR from any other actor -- real creep is still "
                     "caught, just not by this run.")
@@ -328,11 +346,12 @@ def main(this_repo: str, argv: list[str] | None = None, repo_root: str | None = 
                   f"available, and {reason}. That combination is not the "
                   "narrow case this gate may skip for.")
             return 2
+        remote_n = len(FILES) - len(local_paths)
         print("REFUSED: no credential. Set FSG_COMMON_PAT (or GH_TOKEN) to a "
               "token that can read the private repos in this org -- `gh auth "
-              "token` locally, `secrets.FSG_COMMON_PAT` in CI. Without one, "
-              "at least four of the six files were never read, and that is "
-              "not a word count of zero.")
+              f"token` locally, `secrets.FSG_COMMON_PAT` in CI. Without one, "
+              f"at least {remote_n} of the {len(FILES)} files were never "
+              "read, and that is not a word count of zero.")
         return 2
 
     def read(repo: str, path: str) -> str:
